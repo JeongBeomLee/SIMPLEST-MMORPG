@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.h text working-tree-encoding=UTF-8
+*.cpp text working-tree-encoding=UTF-8
+*.lua text working-tree-encoding=UTF-8
