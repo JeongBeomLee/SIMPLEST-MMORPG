@@ -110,3 +110,7 @@ x86/
 # Publish Web Output
 *.[Pp]ublish.xml
 .claude
+
+### Project
+# Local docs/reports (not tracked)
+SIMPLEST-MMORPG/Docs/

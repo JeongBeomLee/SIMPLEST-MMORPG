@@ -143,6 +143,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Network\RingBuffer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Network\RingBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
