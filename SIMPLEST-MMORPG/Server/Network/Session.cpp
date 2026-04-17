@@ -1,6 +1,4 @@
-﻿#include "NetworkClient.h"
-#include "NetworkClient.h"
-#include "Session.h"
+﻿#include "Session.h"
 #include "Protocol.h"
 #include "PacketHandler.h"
 #include <cstring>
