@@ -1,5 +1,8 @@
-﻿#include "Session.h"
+﻿#include "NetworkClient.h"
+#include "NetworkClient.h"
+#include "Session.h"
 #include "Protocol.h"
+#include "PacketHandler.h"
 #include <cstring>
 
 Session::Session()
@@ -97,7 +100,7 @@ void Session::OnRecvComplete(DWORD bytes)
 		m_recvBuffer.Peek(packetBuf, header.size);
 		m_recvBuffer.Pop(header.size);
 
-		// TODO: PacketHandler::HandlePacket(this, packetBuf, header.size);
+		PacketHandler::HandlePacket(this, packetBuf, header.size);
 	}
 
 	// 3. 다음 recv 대기

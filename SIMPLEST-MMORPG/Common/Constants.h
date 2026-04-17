@@ -1,6 +1,9 @@
 ﻿#pragma once
 #include <cstdint>
 
+// 서버 포트
+constexpr uint16_t SERVER_PORT = 9000;
+
 // 맵 관련
 constexpr int MAP_WIDTH = 2000;
 constexpr int MAP_HEIGHT = 2000;
