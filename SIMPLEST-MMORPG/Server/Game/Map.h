@@ -6,6 +6,15 @@
 class Map
 {
 public:
+	Map() = default;
+	~Map() = default;
+
+	// 복사는 무거우니 금지, 이동만 허용
+	Map(const Map&) = delete;
+	Map& operator=(const Map&) = delete;
+	Map(Map&&) = default;
+	Map& operator=(Map&&) = default;
+
 	// 정적 팩토리 메서드들
 	static std::optional<Map> TryLoad(const char* filePath);
 	static Map CreateDefault();
@@ -16,14 +25,7 @@ public:
 	// 쿼리
 	bool IsWalkable(int x, int y) const;
 
-	// 복사는 무거우니 금지, 이동만 허용
-	Map(const Map&) = delete;
-	Map& operator=(const Map&) = delete;
-	Map(Map&&) = default;
-	Map& operator=(Map&&) = default;
-
 private:
-	Map() = default;  // 팩토리에서만 생성
 	void GenerateDefault();
 
 private:
