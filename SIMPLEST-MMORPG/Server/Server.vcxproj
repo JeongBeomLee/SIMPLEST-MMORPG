@@ -148,6 +148,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Game\Map.cpp" />
+    <ClCompile Include="Game\Player.cpp" />
     <ClCompile Include="Game\SectorManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Network\IOCPServer.cpp" />
@@ -156,7 +157,9 @@
     <ClCompile Include="Network\Session.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Game\GameObject.h" />
     <ClInclude Include="Game\Map.h" />
+    <ClInclude Include="Game\Player.h" />
     <ClInclude Include="Game\Sector.h" />
     <ClInclude Include="Game\SectorManager.h" />
     <ClInclude Include="Network\IOCPServer.h" />

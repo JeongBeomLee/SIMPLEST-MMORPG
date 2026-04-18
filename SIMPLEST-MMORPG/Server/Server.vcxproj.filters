@@ -34,6 +34,9 @@
     <ClCompile Include="Game\SectorManager.cpp">
       <Filter>Game</Filter>
     </ClCompile>
+    <ClCompile Include="Game\Player.cpp">
+      <Filter>Main</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Network\RingBuffer.h">
@@ -60,5 +63,9 @@
     <ClInclude Include="Game\SectorManager.h">
       <Filter>Game</Filter>
     </ClInclude>
+    <ClInclude Include="Game\GameObject.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Player.h" />
   </ItemGroup>
 </Project>

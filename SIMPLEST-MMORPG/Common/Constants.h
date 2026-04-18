@@ -11,6 +11,9 @@ constexpr int SECTOR_SIZE = 20;
 constexpr int SECTOR_COUNT_X = MAP_WIDTH / SECTOR_SIZE;
 constexpr int SECTOR_COUNT_Y = MAP_HEIGHT / SECTOR_SIZE;
 
+// 플레이어 최대 레벨
+constexpr uint16_t MAX_LEVEL = 20;
+
 // 플레이어 시야 관련
 constexpr int VIEW_RANGE = 15;
 constexpr int HALF_VIEW = VIEW_RANGE / 2;
