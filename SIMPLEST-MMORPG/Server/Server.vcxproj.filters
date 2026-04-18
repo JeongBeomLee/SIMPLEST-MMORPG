@@ -31,6 +31,9 @@
     <ClCompile Include="Game\Map.cpp">
       <Filter>Game</Filter>
     </ClCompile>
+    <ClCompile Include="Game\SectorManager.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Network\RingBuffer.h">
@@ -49,6 +52,12 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="Game\Map.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Sector.h">
+      <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\SectorManager.h">
       <Filter>Game</Filter>
     </ClInclude>
   </ItemGroup>

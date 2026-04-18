@@ -9,11 +9,13 @@ using ObjectID = uint32_t;
 struct Position 
 {
 	int16_t x, y;
+	auto operator<=>(const Position&) const = default;
 };
 
 struct SectorCoord
 {
 	int sx, sy;
+	auto operator<=>(const SectorCoord&) const = default;
 };
 
 // enum class
