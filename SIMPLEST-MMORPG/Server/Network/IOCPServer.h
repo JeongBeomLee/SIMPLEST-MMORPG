@@ -6,6 +6,7 @@
 #include <queue>
 #include <thread>
 #include <mutex>
+#include <atomic>
 #include "NetworkTypes.h"
 #include "Session.h"
 #include "Constants.h"
@@ -37,7 +38,7 @@ private:
 private:
 	HANDLE m_hIOCP;
 	SOCKET m_listenSocket;
-	bool m_running;
+	std::atomic<bool> m_running;
 
 	// 워커 스레드
 	std::vector<std::thread> m_workerThreads;

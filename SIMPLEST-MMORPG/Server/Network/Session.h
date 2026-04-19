@@ -3,6 +3,7 @@
 #include <mutex>
 #include <queue>
 #include <vector>
+#include <atomic>
 #include "NetworkTypes.h"
 #include "RingBuffer.h"
 
@@ -25,6 +26,9 @@ public:
 	int GetId() const { return m_id; }
 	SOCKET GetSocket() const { return m_socket; }
 
+	// 중복 Disconnect Guard
+	bool TryMarkDisconnected();
+
 private:
 	void PostSend();
 
@@ -41,4 +45,6 @@ private:
 	std::queue<std::vector<char>> m_sendQueue;
 	std::mutex m_sendMutex;
 	bool m_isSending;
+
+	std::atomic<bool> m_disconnected{ false };
 };

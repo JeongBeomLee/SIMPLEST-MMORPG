@@ -8,7 +8,7 @@ class Session;
 class Player : public GameObject
 {
 public:
-	Player(ObjectID id, Session* session);
+	Player(ObjectID id, Session* session, const std::string& name);
 	~Player() override = default;
 
 	Session* GetSession() const { return m_session; }

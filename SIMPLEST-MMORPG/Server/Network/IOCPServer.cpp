@@ -1,4 +1,5 @@
 ﻿#include "IOCPServer.h"
+#include "../Game/GameWorld.h"
 #include <iostream>
 #include <WS2tcpip.h>
 
@@ -108,6 +109,12 @@ void IOCPServer::WorkerThread()
 			&overlapped,
 			INFINITE	// 완료 통지 올 때까지 대기
 		);
+
+		// 종료 중이면 즉시 탈출
+		if (!m_running)
+		{
+			break;
+		}
 
 		// 종료 신호 (Shutdown에서 PostQCS로 보냄)
 		if (overlapped == nullptr)
@@ -238,7 +245,14 @@ void IOCPServer::DisconnectSession(Session* session)
 		return;
 	}
 
+	if (!session->TryMarkDisconnected())
+	{
+		return;
+	}
+
 	int id = session->GetId();
+
+	GameWorld::GetInstance().ProcessDisconnect(session);
 
 	session->Close();
 	delete session;
@@ -271,6 +285,8 @@ void IOCPServer::FreeSessionId(int id)
 
 void IOCPServer::ShutDown()
 {
+	if (!m_running) return;
+
 	m_running = false;
 
 	// 워커스레드 깨우기
@@ -288,23 +304,29 @@ void IOCPServer::ShutDown()
 		}
 	}
 
-	// 세선 정리
-	for (int i = 0; i < MAX_PLAYERS; ++i)
-	{
-		if (m_sessions[i] != nullptr)
-		{
-			m_sessions[i]->Close();
-			delete m_sessions[i];
-			m_sessions[i] = nullptr;
-		}
-	}
-
 	// 리슨 소켓 닫기
 	if (m_listenSocket != INVALID_SOCKET)
 	{
 		closesocket(m_listenSocket);
 		m_listenSocket = INVALID_SOCKET;
 	}
+
+	// 세선 정리
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+	{
+		Session* session = m_sessions[i];
+		if (session == nullptr) continue;
+
+		if (session->TryMarkDisconnected()) {
+			GameWorld::GetInstance().ProcessDisconnect(session);
+		}
+		session->Close();
+		delete session;
+		m_sessions[i] = nullptr;
+	}
+
+	// GameWorld 정리
+	GameWorld::GetInstance().Shutdown();
 
 	// IOCP 핸들 닫기
 	if (m_hIOCP != NULL)

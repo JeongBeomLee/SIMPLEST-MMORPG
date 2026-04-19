@@ -2,10 +2,11 @@
 #include "Constants.h"
 #include <algorithm>
 
-Player::Player(ObjectID id, Session* session)
+Player::Player(ObjectID id, Session* session, const std::string& name)
 	: GameObject(id, ObjectType::PLAYER)
 	, m_session(session)
 {
+	m_name = name;
 }
 
 void Player::GainExp(int32_t amount)

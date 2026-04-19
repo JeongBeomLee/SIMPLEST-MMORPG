@@ -105,6 +105,12 @@ void Session::OnRecvComplete(DWORD bytes)
 	PostRecv();
 }
 
+bool Session::TryMarkDisconnected()
+{
+	bool expected = false;
+	return m_disconnected.compare_exchange_strong(expected, true);
+}
+
 void Session::PostSend()
 {
 	// 큐의 맨 앞 패킷으로 WSASend
