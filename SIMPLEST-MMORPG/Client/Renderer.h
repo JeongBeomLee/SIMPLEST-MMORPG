@@ -31,6 +31,7 @@ private:
 	void SetChar(int x, int y, wchar_t ch, WORD attr);
 	void DrawString(int x, int y, const wchar_t* str, WORD attr);
 	void DrawBorder(int x, int y, int w, int h);
+	void DrawTile(int tileX, int tileY, wchar_t ch, WORD attr);
 
 	// 게임 화면 서브 렌더
 	void DrawViewport();
@@ -44,7 +45,7 @@ private:
 	static constexpr int SCREEN_H = 30;
 	CHAR_INFO m_buffer[SCREEN_W * SCREEN_H]{};
 
-	static constexpr size_t MAX_LOG_LINES = 18;
+	static constexpr size_t MAX_LOG_LINES = 15;
 	std::deque<std::wstring> m_logLines;
 	mutable std::mutex m_logMutex;
 };
