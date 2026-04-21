@@ -1,6 +1,7 @@
 ﻿#include "NetworkClient.h"
 #include "Protocol.h"
 #include "Logger.h"
+#include "GameState.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -146,15 +147,60 @@ void NetworkClient::RecvThread()
 void NetworkClient::OnPacket(const char* data, uint16_t size)
 {
 	const PacketHeader* header = reinterpret_cast<const PacketHeader*>(data);
+	GameState& state = GameState::GetInstance();
 
 	switch (static_cast<PacketType>(header->type))
 	{
 	case PacketType::SC_LOGIN_OK:
-		LOG("LOGIN_OK received");
+	{
+		const SC_LoginOk* p = reinterpret_cast<const SC_LoginOk*>(data);
+		MyPlayer me;
+		me.id = p->my_id;
+		me.x = p->x;
+		me.y = p->y;
+		me.level = p->level;
+		me.exp = p->exp;
+		me.hp = p->hp;
+		me.maxHp = p->max_hp;
+		state.SetMyPlayer(me);
+		LOG("LOGIN_OK: id=" << me.id << " pos(" << me.x << "," << me.y << ")");
 		break;
+	}
 	case PacketType::SC_LOGIN_FAIL:
+	{
 		LOG("LOGIN_FAIL received");
 		break;
+	}
+	case PacketType::SC_ADD_OBJECT:
+	{
+		const SC_AddObject* p = reinterpret_cast<const SC_AddObject*>(data);
+		RemoteObject obj;
+		obj.id = p->object_id;
+		obj.x = p->x;
+		obj.y = p->y;
+		obj.type = p->object_type;
+		obj.level = p->level;
+		obj.hp = p->hp;
+		obj.maxHp = p->max_hp;
+		obj.name = std::string(p->name);
+		state.AddObject(obj);
+		LOG("ADD_OBJECT: id=" << obj.id << " name=" << obj.name << " pos=(" << obj.x << "," << obj.y << ")");
+		break;
+	}
+	case PacketType::SC_REMOVE_OBJECT:
+	{
+		const SC_RemoveObject* p = reinterpret_cast<const SC_RemoveObject*>(data);
+		state.RemoveObject(p->object_id);
+		LOG("REMOVE_OBJECT: id=" << p->object_id);
+		break;
+	}
+	case PacketType::SC_MOVE_OBJECT:
+	{
+		const SC_MoveObject* p = reinterpret_cast<const SC_MoveObject*>(data);
+		state.MoveObject(p->object_id, p->x, p->y);
+		LOG("MOVE_OBJECT: id=" << p->object_id << " pos=(" << p->x << "," << p->y << ")");
+		break;
+	}
 	default:
 		LOG("Unknown packet type: " << header->type);
 		break;
