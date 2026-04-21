@@ -2,6 +2,7 @@
 #include "../Network/Session.h"
 #include "Protocol.h"
 #include "Types.h"
+#include "ViewProcessor.h"
 #include <iostream>
 
 GameWorld& GameWorld::GetInstance()
@@ -59,7 +60,7 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 	session->SendPacket(&okPkt, sizeof(okPkt));
 
 	// 4. 시야 내 객체들을 나에게 + 나를 시야 내 플레이어에게
-	//    → ViewProcessor::SendFullView(player);  (다음 단계에서 구현)
+	ViewProcessor::SendFullView(player);
 }
 
 ObjectID GameWorld::AddPlayer(Session* session, const std::string& name)
@@ -124,7 +125,7 @@ void GameWorld::ProcessMove(Session* session, const char* data)
 	m_sectorManager.MoveObject(id, oldX, oldY, newX, newY);
 
 	// 6. 시야 diff 처리
-	//    → ViewProcessor::ProcessMoveView(player, oldX, oldY);
+	ViewProcessor::ProcessMoveView(player, oldX, oldY);
 }
 
 void GameWorld::ProcessDisconnect(Session* session)
@@ -137,7 +138,7 @@ void GameWorld::ProcessDisconnect(Session* session)
 	}
 
 	// 1. 시야 내 플레이어에게 SC_RemoveObject 전송
-	//    → ViewProcessor::SendDisappear(player);
+	ViewProcessor::SendDisappear(player);
 
 	// 2. 섹터에서 제거
 	m_sectorManager.RemoveObject(id, player->GetX(), player->GetY());

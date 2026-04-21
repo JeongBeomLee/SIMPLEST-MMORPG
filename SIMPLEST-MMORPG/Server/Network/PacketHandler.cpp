@@ -1,21 +1,29 @@
 ﻿#include "PacketHandler.h"
 #include "Session.h"
 #include "Protocol.h"
+#include "../Game/GameWorld.h"
 #include <iostream>
 
 void PacketHandler::HandlePacket(Session* session, const char* data, uint16_t size)
 {
 	const PacketHeader* header = reinterpret_cast<const PacketHeader*>(data);
+	if (size < sizeof(PacketHeader) || header->size != size)
+	{
+		std::cout << "[Session " << session->GetId() << "] Invalid packet size" << std::endl;
+		return;
+	}
+
+	GameWorld& world = GameWorld::GetInstance();
 
 	switch (static_cast<PacketType>(header->type))
 	{
 	case PacketType::CS_LOGIN:
-		std::cout << "[Session " << session->GetId() << "] LOGIN packet received" << std::endl;
-		// TODO: GameWorld::ProcessLogin(session, data);
+		if (size != sizeof(CS_Login)) return;
+		world.ProcessLogin(session, data);
 		break;
 	case PacketType::CS_MOVE:
-		std::cout << "[Session " << session->GetId() << "] MOVE packet received" << std::endl;
-		// TODO: GameWorld::ProcessMove(session, data);
+		if (size != sizeof(CS_Move)) return;
+		world.ProcessMove(session, data);
 		break;
 	case PacketType::CS_ATTACK:
 		std::cout << "[Session " << session->GetId() << "] ATTACK packet received" << std::endl;

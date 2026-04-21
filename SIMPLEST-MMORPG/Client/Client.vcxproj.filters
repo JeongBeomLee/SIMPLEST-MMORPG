@@ -16,12 +16,21 @@
     <ClCompile Include="main.cpp">
       <Filter>Client</Filter>
     </ClCompile>
+    <ClCompile Include="GameState.cpp">
+      <Filter>Client</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RingBuffer.h">
       <Filter>Client</Filter>
     </ClInclude>
     <ClInclude Include="NetworkClient.h">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger.h">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="GameState.h">
       <Filter>Client</Filter>
     </ClInclude>
   </ItemGroup>

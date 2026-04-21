@@ -3,6 +3,7 @@
 #include "NetworkClient.h"
 #include "Protocol.h"
 #include "Constants.h"
+#include "Logger.h"
 
 int main()
 {
@@ -10,7 +11,7 @@ int main()
 
 	if (!client.Connect("127.0.0.1", SERVER_PORT))
 	{
-		std::cout << "Connect failed" << std::endl;
+		LOG("Connect failed");
 		return -1;
 	}
 
@@ -19,7 +20,7 @@ int main()
 	std::cout << "Enter name: ";
 	std::cin >> name;
 	if (name.size() >= 32) {
-		std::cout << "Name too long" << std::endl;
+		LOG("Name too long");
 		return -1;
 	}
 

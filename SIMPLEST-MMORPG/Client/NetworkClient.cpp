@@ -1,6 +1,6 @@
 ﻿#include "NetworkClient.h"
 #include "Protocol.h"
-#include <iostream>
+#include "Logger.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -21,7 +21,7 @@ bool NetworkClient::Connect(const char* ip, uint16_t port)
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 	{
-		std::cout << "WSAStartup failed" << std::endl;
+		LOG("WSAStartup failed");
 		return false;
 	}
 
@@ -29,7 +29,7 @@ bool NetworkClient::Connect(const char* ip, uint16_t port)
 	m_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_socket == INVALID_SOCKET)
 	{
-		std::cout << "socket failed" << std::endl;
+		LOG("socket failed");
 		return false;
 	}
 
@@ -43,7 +43,7 @@ bool NetworkClient::Connect(const char* ip, uint16_t port)
 	// 4. 연결
 	if (connect(m_socket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
 	{
-		std::cout << "connect failed" << std::endl;
+		LOG("connect failed");
 		closesocket(m_socket);
 		m_socket = INVALID_SOCKET;
 		return false;
@@ -53,7 +53,7 @@ bool NetworkClient::Connect(const char* ip, uint16_t port)
 	m_running = true;
 	m_recvThread = std::thread(&NetworkClient::RecvThread, this);
 
-	std::cout << "Connected to " << ip << ":" << port << std::endl;
+	LOG("Connected to " << ip << ":" << port);
 	return true;
 }
 
@@ -90,7 +90,7 @@ void NetworkClient::SendPacket(const void* data, uint16_t size)
 		int n = send(m_socket, ptr + sent, size - sent, 0);
 		if (n <= 0)
 		{
-			std::cout << "send failed" << std::endl;
+			LOG("send failed");
 			return;
 		}
 		sent += n;
@@ -108,7 +108,7 @@ void NetworkClient::RecvThread()
 		if (writeSize == 0)
 		{
 			// 버퍼 꽉 참 — 비정상 (패킷 파싱이 밀림)
-			std::cout << "recv buffer full" << std::endl;
+			LOG("recv buffer full");
 			break;
 		}
 
@@ -140,7 +140,7 @@ void NetworkClient::RecvThread()
 		}
 	}
 
-	std::cout << "RecvThread terminated" << std::endl;
+	LOG("RecvThread terminated");
 }
 
 void NetworkClient::OnPacket(const char* data, uint16_t size)
@@ -150,13 +150,13 @@ void NetworkClient::OnPacket(const char* data, uint16_t size)
 	switch (static_cast<PacketType>(header->type))
 	{
 	case PacketType::SC_LOGIN_OK:
-		std::cout << "LOGIN_OK received" << std::endl;
+		LOG("LOGIN_OK received");
 		break;
 	case PacketType::SC_LOGIN_FAIL:
-		std::cout << "LOGIN_FAIL received" << std::endl;
+		LOG("LOGIN_FAIL received");
 		break;
 	default:
-		std::cout << "Unknown packet type: " << header->type << std::endl;
+		LOG("Unknown packet type: " << header->type);
 		break;
 	}
 }

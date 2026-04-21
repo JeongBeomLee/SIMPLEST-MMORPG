@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <cstdint> // Self-contained header
+#include <compare> // <=>
 #include "Constants.h"
 
 // 타입 별칭
