@@ -214,7 +214,17 @@ void Renderer::DrawViewport()
 	// 타일 영역 외부를 감싸는 뷰포트 테두리
 	DrawBorder(VIEWPORT_BORDER_X, VIEWPORT_BORDER_Y, VIEWPORT_BORDER_W, VIEWPORT_BORDER_H);
 
-	// 빈 타일
+	// 시야 밖 영역은 포그로 채움
+	WORD fogColor = FOREGROUND_INTENSITY;
+	for (int y = VIEWPORT_BORDER_Y + 1; y < VIEWPORT_BORDER_Y + VIEWPORT_BORDER_H - 1; ++y)
+	{
+		for (int x = VIEWPORT_BORDER_X + 1; x < VIEWPORT_BORDER_X + VIEWPORT_BORDER_W - 1; ++x)
+		{
+			SetChar(x, y, L'░', fogColor);
+		}
+	}
+
+	// 빈 타일 (시야 내 — walkable)
 	for (int ty = 0; ty < VIEWPORT_TILES; ++ty)
 	{
 		for (int tx = 0; tx < VIEWPORT_TILES; ++tx)
