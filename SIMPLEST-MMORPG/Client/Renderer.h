@@ -40,11 +40,11 @@ private:
 private:
 	HANDLE m_hConsole{ INVALID_HANDLE_VALUE };
 
-	static constexpr int SCREEN_W = 80;
-	static constexpr int SCREEN_H = 25;
+	static constexpr int SCREEN_W = 120;
+	static constexpr int SCREEN_H = 30;
 	CHAR_INFO m_buffer[SCREEN_W * SCREEN_H]{};
 
-	static constexpr size_t MAX_LOG_LINES = 12;
+	static constexpr size_t MAX_LOG_LINES = 18;
 	std::deque<std::wstring> m_logLines;
 	mutable std::mutex m_logMutex;
 };

@@ -19,6 +19,9 @@
     <ClCompile Include="GameState.cpp">
       <Filter>Client</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Client</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RingBuffer.h">
@@ -31,6 +34,9 @@
       <Filter>Client</Filter>
     </ClInclude>
     <ClInclude Include="GameState.h">
+      <Filter>Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
       <Filter>Client</Filter>
     </ClInclude>
   </ItemGroup>
