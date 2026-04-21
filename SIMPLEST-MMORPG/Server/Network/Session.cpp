@@ -36,7 +36,7 @@ void Session::Close()
 	}
 
 	// send 큐 비우기
-	std::lock_guard<std::mutex> lock(m_sendMutex);
+	std::lock_guard lock(m_sendMutex);
 	while (!m_sendQueue.empty())
 	{
 		m_sendQueue.pop();
@@ -148,7 +148,7 @@ void Session::SendPacket(const void* data, uint16_t size)
 	std::vector<char> packet(size);
 	memcpy(packet.data(), data, size);
 
-	std::lock_guard<std::mutex> lock(m_sendMutex);
+	std::lock_guard lock(m_sendMutex);
 	m_sendQueue.push(std::move(packet));
 
 	// 현재 보내는 중이 아니면 전송 시작
@@ -161,7 +161,7 @@ void Session::SendPacket(const void* data, uint16_t size)
 
 void Session::OnSendComplete()
 {
-	std::lock_guard<std::mutex> lock(m_sendMutex);
+	std::lock_guard lock(m_sendMutex);
 
 	// 완료된 패킷 제거
 	if (!m_sendQueue.empty())

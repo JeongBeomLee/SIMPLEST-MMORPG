@@ -26,7 +26,7 @@ namespace LogInternal
         _oss << msg << "\n"; \
         std::string _str = _oss.str(); \
         OutputDebugStringA(_str.c_str()); \
-        std::lock_guard<std::mutex> _lock(LogInternal::GetLogMutex()); \
+        std::lock_guard _lock(LogInternal::GetLogMutex()); \
         LogInternal::GetLogFile() << _str; \
         LogInternal::GetLogFile().flush(); \
     } while(0)
@@ -35,7 +35,7 @@ namespace LogInternal
         std::ostringstream _oss; \
         _oss << msg << "\n"; \
         std::string _str = _oss.str(); \
-        std::lock_guard<std::mutex> _lock(LogInternal::GetLogMutex()); \
+        std::lock_guard _lock(LogInternal::GetLogMutex()); \
         LogInternal::GetLogFile() << _str; \
         LogInternal::GetLogFile().flush(); \
     } while(0)

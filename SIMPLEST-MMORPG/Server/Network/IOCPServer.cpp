@@ -265,7 +265,7 @@ void IOCPServer::DisconnectSession(Session* session)
 
 int IOCPServer::AllocSessionId()
 {
-	std::lock_guard<std::mutex> lock(m_idMutex);
+	std::lock_guard lock(m_idMutex);
 
 	if (m_availableIds.empty())
 	{
@@ -279,7 +279,7 @@ int IOCPServer::AllocSessionId()
 
 void IOCPServer::FreeSessionId(int id)
 {
-	std::lock_guard<std::mutex> lock(m_idMutex);
+	std::lock_guard lock(m_idMutex);
 	m_availableIds.push(id);
 }
 
