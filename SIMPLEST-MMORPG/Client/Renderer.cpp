@@ -5,17 +5,24 @@
 namespace 
 {
 	// 뷰포트
-	constexpr int VIEWPORT_TILES = 27;
-	constexpr int TILE_WIDTH = 2; // 한 타일 = 2 열 (문자 + 공백)
+	constexpr int VIEWPORT_TILES = 21;
+	constexpr int TILE_WIDTH = 2;
+
+	// 고정 테두리 크기
 	constexpr int VIEWPORT_BORDER_X = 0;
 	constexpr int VIEWPORT_BORDER_Y = 0;
-	constexpr int VIEWPORT_BORDER_W = VIEWPORT_TILES * TILE_WIDTH + 3; // 57
-	constexpr int VIEWPORT_BORDER_H = VIEWPORT_TILES + 2; // 29
-	constexpr int TILE_OFFSET_X = 2; // 왼쪽 테두리 + 왼쪽 패딩
-	constexpr int TILE_OFFSET_Y = 1;
+	constexpr int VIEWPORT_BORDER_W = 57;
+	constexpr int VIEWPORT_BORDER_H = 29;
 
-	constexpr int CENTER_TILE_X = 13;
-	constexpr int CENTER_TILE_Y = 13;
+	// 타일 영역 + 패딩
+	constexpr int TILE_AREA_W = VIEWPORT_TILES * TILE_WIDTH;
+	constexpr int TILE_AREA_H = VIEWPORT_TILES;
+	constexpr int TILE_OFFSET_X = 1 + ((VIEWPORT_BORDER_W - 2) - TILE_AREA_W + 1) / 2;
+	constexpr int TILE_OFFSET_Y = 1 + ((VIEWPORT_BORDER_H - 2) - TILE_AREA_H + 1) / 2;
+
+	// 센터
+	constexpr int CENTER_TILE_X = VIEWPORT_TILES / 2;
+	constexpr int CENTER_TILE_Y = VIEWPORT_TILES / 2;
 
 	// HUD (오른쪽 위) — 뷰포트 우측(57) + 1칸 여백 후 시작
 	constexpr int HUD_X = 58;

@@ -15,7 +15,7 @@ constexpr int SECTOR_COUNT_Y = MAP_HEIGHT / SECTOR_SIZE;
 constexpr uint16_t MAX_LEVEL = 20;
 
 // 플레이어 시야 관련
-constexpr int VIEW_RANGE = 27;
+constexpr int VIEW_RANGE = 21;
 constexpr int HALF_VIEW = VIEW_RANGE / 2;
 
 // AI 시야 관련
