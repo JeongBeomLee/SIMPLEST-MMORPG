@@ -46,6 +46,9 @@
     <ClCompile Include="..\Common\Map.cpp">
       <Filter>Common</Filter>
     </ClCompile>
+    <ClCompile Include="Game\Monster.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Network\RingBuffer.h">
@@ -92,6 +95,9 @@
     </ClInclude>
     <ClInclude Include="..\Common\Types.h">
       <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Monster.h">
+      <Filter>Game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

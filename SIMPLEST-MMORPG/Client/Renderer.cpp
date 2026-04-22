@@ -441,25 +441,34 @@ void Renderer::DrawHUD()
 
 	wchar_t buf[64];
 
+	// Line 0: Name
+	wchar_t nameBuf[32] = { 0 };
+	for (size_t i = 0; i < me.name.size() && i < 31; ++i)
+	{
+		nameBuf[i] = static_cast<wchar_t>(me.name[i]);
+	}
+	DrawString(HUD_X + 2, HUD_Y + 1, L"Name:", titleColor);
+	DrawString(HUD_X + 10, HUD_Y + 1, nameBuf, valueColor);
+
 	// Line 1: Lv
 	swprintf_s(buf, L"Lv %d", me.level);
-	DrawString(HUD_X + 2, HUD_Y + 1, L"Level:", titleColor);
-	DrawString(HUD_X + 10, HUD_Y + 1, buf, valueColor);
+	DrawString(HUD_X + 2, HUD_Y + 3, L"Level:", titleColor);
+	DrawString(HUD_X + 10, HUD_Y + 3, buf, valueColor);
 
 	// Line 2: HP
 	swprintf_s(buf, L"%d / %d", me.hp, me.maxHp);
-	DrawString(HUD_X + 2, HUD_Y + 3, L"HP:", titleColor);
-	DrawString(HUD_X + 10, HUD_Y + 3, buf, FOREGROUND_RED | FOREGROUND_INTENSITY);
+	DrawString(HUD_X + 2, HUD_Y + 5, L"HP:", titleColor);
+	DrawString(HUD_X + 10, HUD_Y + 5, buf, FOREGROUND_RED | FOREGROUND_INTENSITY);
 
 	// Line 3: Exp
 	swprintf_s(buf, L"%d", me.exp);
-	DrawString(HUD_X + 2, HUD_Y + 5, L"Exp:", titleColor);
-	DrawString(HUD_X + 10, HUD_Y + 5, buf, valueColor);
+	DrawString(HUD_X + 2, HUD_Y + 7, L"Exp:", titleColor);
+	DrawString(HUD_X + 10, HUD_Y + 7, buf, valueColor);
 
 	// Line 4: Pos
 	swprintf_s(buf, L"(%d, %d)", me.x, me.y);
-	DrawString(HUD_X + 2, HUD_Y + 7, L"Pos:", titleColor);
-	DrawString(HUD_X + 10, HUD_Y + 7, buf, valueColor);
+	DrawString(HUD_X + 2, HUD_Y + 9, L"Pos:", titleColor);
+	DrawString(HUD_X + 10, HUD_Y + 9, buf, valueColor);
 }
 
 void Renderer::DrawLogBox()

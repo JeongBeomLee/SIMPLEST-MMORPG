@@ -29,6 +29,12 @@ void GameState::SetMyPlayer(const MyPlayer& me)
 	m_loggedIn = true;
 }
 
+void GameState::SetMyName(const std::string& name)
+{
+	std::lock_guard lock(m_mutex);
+	m_me.name = name;
+}
+
 void GameState::AddObject(const RemoteObject& obj)
 {
 	std::lock_guard lock(m_mutex);

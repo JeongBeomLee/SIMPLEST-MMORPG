@@ -79,6 +79,8 @@ int main()
 			strncpy_s(pkt.name, sizeof(pkt.name), nameUtf8.c_str(), _TRUNCATE);
 			client.SendPacket(&pkt, sizeof(pkt));
 
+			GameState::GetInstance().SetMyName(nameUtf8);
+
 			state = AppState::IN_GAME;
 			break;
 		}

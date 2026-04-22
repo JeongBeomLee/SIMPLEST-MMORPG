@@ -24,6 +24,7 @@ struct MyPlayer
 	uint16_t level;
 	int32_t exp;
 	int32_t hp, maxHp;
+	std::string name;
 };
 
 class GameState
@@ -39,6 +40,9 @@ public:
 
 	// Login OK 처리 시 호출
 	void SetMyPlayer(const MyPlayer& me);
+
+	// 플레이어 이름 등록
+	void SetMyName(const std::string& name);
 
 	// 오브젝트 추가/갱신/제거 (SC_AddObject, SC_MoveObject, SC_RemoveObject)
 	void AddObject(const RemoteObject& obj);

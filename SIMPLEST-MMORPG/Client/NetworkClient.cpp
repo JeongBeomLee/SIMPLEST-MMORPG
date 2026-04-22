@@ -154,7 +154,7 @@ void NetworkClient::OnPacket(const char* data, uint16_t size)
 	case PacketType::SC_LOGIN_OK:
 	{
 		const SC_LoginOk* p = reinterpret_cast<const SC_LoginOk*>(data);
-		MyPlayer me;
+		MyPlayer me = state.GetMyPlayer();
 		me.id = p->my_id;
 		me.x = p->x;
 		me.y = p->y;
