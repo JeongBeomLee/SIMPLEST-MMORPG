@@ -2,6 +2,9 @@
 #include "GameState.h"
 #include "Constants.h"
 #include <cwchar>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
 
 namespace 
 {
@@ -36,6 +39,47 @@ namespace
 	constexpr int LOG_Y = 12;
 	constexpr int LOG_W = 62;
 	constexpr int LOG_H = 17;
+
+	// 블록 문자 폰트 정의 (5행 고정)
+	constexpr int FONT_ROWS = 5;
+
+	struct LetterDef
+	{
+		int width;
+		const wchar_t* rows[FONT_ROWS];
+	};
+
+	// 0:S  1:I  2:M  3:P  4:L  5:E  6:T  7:O  8:R  9:G
+	const LetterDef FONT[] = {
+		{ 5, { L" ███ ", L"█    ", L" ███ ", L"    █", L" ███ " } },  // S
+		{ 3, { L"███",   L" █ ",   L" █ ",   L" █ ",   L"███"   } },  // I
+		{ 5, { L"█   █", L"██ ██", L"█ █ █", L"█   █", L"█   █" } },  // M
+		{ 5, { L"████ ", L"█   █", L"████ ", L"█    ", L"█    " } },  // P
+		{ 5, { L"█    ", L"█    ", L"█    ", L"█    ", L"█████" } },  // L
+		{ 5, { L"█████", L"█    ", L"████ ", L"█    ", L"█████" } },  // E
+		{ 5, { L"█████", L"  █  ", L"  █  ", L"  █  ", L"  █  " } },  // T
+		{ 5, { L" ███ ", L"█   █", L"█   █", L"█   █", L" ███ " } },  // O
+		{ 5, { L"████ ", L"█   █", L"████ ", L"█  █ ", L"█   █" } },  // R
+		{ 5, { L" ████", L"█    ", L"█  ██", L"█   █", L" ███ " } },  // G
+	};
+
+	const int WORD1[] = { 0, 1, 2, 3, 4, 5, 0, 6 };
+	constexpr int WORD1_LEN = 8;
+
+	const int WORD2[] = { 2, 2, 7, 8, 3, 9 };
+	constexpr int WORD2_LEN = 6;
+
+	constexpr int LETTER_GAP = 2;
+
+	const WORD RAINBOW_COLORS[] = {
+		FOREGROUND_RED | FOREGROUND_INTENSITY,
+		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,
+		FOREGROUND_GREEN | FOREGROUND_INTENSITY,
+		FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+		FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+		FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+	};
+	constexpr int NUM_COLORS = 6;
 }
 
 Renderer& Renderer::GetInstance()
@@ -138,25 +182,120 @@ void Renderer::DrawTile(int tileX, int tileY, wchar_t ch, WORD attr)
 	SetChar(col + 1, row, L' ', attr);
 }
 
+void Renderer::InitStars()
+{
+	srand((unsigned)time(nullptr));
+	const wchar_t starChars[] = { L'.', L'*', L'+', L'\'' };
+	const WORD starColors[] = {
+		FOREGROUND_INTENSITY,
+		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
+		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+	};
+
+	for (int i = 0; i < MAX_STARS; ++i)
+	{
+		m_stars[i].x = rand() % (SCREEN_W - 2) + 1;
+		m_stars[i].y = rand() % (SCREEN_H - 2) + 1;
+		m_stars[i].speed = rand() % 3 + 1;  // 1~3 프레임당 1칸
+		m_stars[i].ticker = 0;
+		m_stars[i].ch = starChars[rand() % 4];
+		m_stars[i].color = starColors[rand() % 3];
+	}
+	m_starsInited = true;
+}
+
+void Renderer::UpdateAndDrawStars()
+{
+	const wchar_t starChars[] = { L'.', L'*', L'+', L'\'' };
+	const WORD starColors[] = {
+		FOREGROUND_INTENSITY,
+		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
+		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
+	};
+
+	for (int i = 0; i < MAX_STARS; ++i)
+	{
+		Star& s = m_stars[i];
+
+		// 낙하 업데이트
+		++s.ticker;
+		if (s.ticker >= s.speed)
+		{
+			s.ticker = 0;
+			++s.y;
+
+			// 화면 밖으로 나가면 맨 위에서 리스폰
+			if (s.y >= SCREEN_H - 1)
+			{
+				s.y = 1;
+				s.x = rand() % (SCREEN_W - 2) + 1;
+				s.speed = rand() % 3 + 1;
+				s.ch = starChars[rand() % 4];
+				s.color = starColors[rand() % 3];
+			}
+		}
+
+		// 그리기 (나중에 글자가 덮어쓰므로 글자 안 가림)
+		SetChar(s.x, s.y, s.ch, s.color);
+	}
+}
+
 void Renderer::RenderMainMenu(const std::wstring& nameInput)
 {
 	Clear();
+	++m_frameCount;
+	if (!m_starsInited)
+	{
+		InitStars();
+	}
+
+	// 별 비 (먼저 그려서 글자/테두리에 가려지도록)
+	UpdateAndDrawStars();
 
 	// 전체 테두리
 	DrawBorder(0, 0, SCREEN_W, SCREEN_H);
 
-	// 타이틀 (아스키 아트로 돌아가게 만들고 싶음)
-	const wchar_t* title = L"S I M P L E S T   M M O R P G";
-	int titleLen = (int)wcslen(title);
-	int titleX = (SCREEN_W - titleLen) / 2;
-	DrawString(titleX, 8, title, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+	// 타이틀 아스키 아트
+	auto drawWord = [&](const int* letterIndices, int numLetters, int baseY)
+	{
+		int totalWidth = 0;
+		for (int li = 0; li < numLetters; ++li)
+		{
+			totalWidth += FONT[letterIndices[li]].width;
+			if (li < numLetters - 1) totalWidth += LETTER_GAP;
+		}
 
-	DrawString(45, 10, L"( Portfolio Project )", FOREGROUND_INTENSITY);
+		int curX = (SCREEN_W - totalWidth) / 2;
+
+		for (int li = 0; li < numLetters; ++li)
+		{
+			const LetterDef& letter = FONT[letterIndices[li]];
+
+			int yOffset = (int)round(sin(li * 0.8 + m_frameCount * 0.1) * 1.5);
+			int colorIdx = ((li + m_frameCount / 4) % NUM_COLORS + NUM_COLORS) % NUM_COLORS;
+			WORD color = RAINBOW_COLORS[colorIdx];
+
+			for (int row = 0; row < FONT_ROWS; ++row)
+			{
+				for (int col = 0; col < letter.width; ++col)
+				{
+					wchar_t ch = letter.rows[row][col];
+					if (ch == L' ') continue;
+					SetChar(curX + col, baseY + row + yOffset, ch, color);
+				}
+			}
+
+			curX += letter.width + LETTER_GAP;
+		}
+	};
+
+	drawWord(WORD1, WORD1_LEN, 4);
+	drawWord(WORD2, WORD2_LEN, 12);
 
 	// 입력 프롬프트
 	const wchar_t* prompt = L"Enter your name: ";
 	int promptX = 40;
-	int promptY = 14;
+	int promptY = 20;
 	DrawString(promptX, promptY, prompt, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
 
 	// 입력 박스: [ ______________ ]
@@ -169,13 +308,16 @@ void Renderer::RenderMainMenu(const std::wstring& nameInput)
 		SetChar(boxX + 2 + (int)i, promptY, nameInput[i], FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
 	}
 
-	// 커서 표시 (깜빡이게 해야함)
-	int cursorX = boxX + 2 + (int)min(nameInput.size(), size_t(16));
-	SetChar(cursorX, promptY, L'_', FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+	// 커서 깜빡임
+	if (m_frameCount % 30 < 20)
+	{
+		int cursorX = boxX + 2 + (int)min(nameInput.size(), size_t(16));
+		SetChar(cursorX, promptY, L'_', FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+	}
 
 	// 안내 텍스트
-	DrawString(48, 17, L"[ ENTER ] to login", FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-	DrawString(49, 18, L"[ ESC ] to quit", FOREGROUND_RED | FOREGROUND_INTENSITY);
+	DrawString(48, 23, L"[ ENTER ] to login", FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+	DrawString(49, 24, L"[ ESC ] to quit", FOREGROUND_RED | FOREGROUND_INTENSITY);
 
 	Flush();
 }
