@@ -11,6 +11,9 @@
     <Filter Include="Game">
       <UniqueIdentifier>{1798a659-543d-4f3a-b373-a567a44711c9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{4935f207-0c75-4fbb-9305-24eabfaef719}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Network\RingBuffer.cpp">
@@ -28,9 +31,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Main</Filter>
     </ClCompile>
-    <ClCompile Include="Game\Map.cpp">
-      <Filter>Game</Filter>
-    </ClCompile>
     <ClCompile Include="Game\SectorManager.cpp">
       <Filter>Game</Filter>
     </ClCompile>
@@ -42,6 +42,9 @@
     </ClCompile>
     <ClCompile Include="Game\ViewProcessor.cpp">
       <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\Map.cpp">
+      <Filter>Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -60,9 +63,6 @@
     <ClInclude Include="Network\PacketHandler.h">
       <Filter>Network</Filter>
     </ClInclude>
-    <ClInclude Include="Game\Map.h">
-      <Filter>Game</Filter>
-    </ClInclude>
     <ClInclude Include="Game\Sector.h">
       <Filter>Game</Filter>
     </ClInclude>
@@ -80,6 +80,18 @@
     </ClInclude>
     <ClInclude Include="Game\ViewProcessor.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\Constants.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\Map.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\Protocol.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\Types.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

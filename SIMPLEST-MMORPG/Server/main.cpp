@@ -1,18 +1,14 @@
 ﻿#include <iostream>
 #include "Network/IOCPServer.h"
+#include "Game/GameWorld.h"
 #include "Constants.h"
-#include "Game/Map.h"
-#include "Game/Player.h"
 
 int main()
 {
-	// Map 로드 (TODO: GameWorld로 이전)
-	auto loaded = Map::TryLoad("Data/map_obstacles.dat");
-	Map map = loaded ? std::move(*loaded) : Map::CreateDefault();
-	if (!loaded) {
-		map.SaveToFile("Data/map_obstacles.dat");
-	}
+	// 1. GameWorld 초기화 (Map 로드 + SectorManager 준비)
+	GameWorld::GetInstance().Init();
 
+	// 2. IOCP 서버 시작
 	IOCPServer server;
 	if (!server.Init(SERVER_PORT))
 	{
@@ -20,9 +16,9 @@ int main()
 		return -1;
 	}
 
-	// 종료 명령 대기
+	// 3. 종료 명령 대기
 	std::cout << "Press 'q' + Enter to shutdown" << std::endl;
-	while (true) 
+	while (true)
 	{
 		char c;
 		std::cin >> c;

@@ -85,13 +85,20 @@ int main()
 				break;
 			}
 
-			if (input.hasMove) 
+			if (input.hasMove)
 			{
 				CS_Move mp;
 				mp.header.size = sizeof(mp);
 				mp.header.type = static_cast<uint16_t>(PacketType::CS_MOVE);
 				mp.direction = static_cast<uint8_t>(input.moveDir);
 				client.SendPacket(&mp, sizeof(mp));
+
+				// 클라이언트 자기 위치 즉시 반영
+				GameState& state = GameState::GetInstance();
+				MyPlayer me = state.GetMyPlayer();
+				int16_t newX = me.x + DX[static_cast<int>(input.moveDir)];
+				int16_t newY = me.y + DY[static_cast<int>(input.moveDir)];
+				state.MoveMyPlayer(newX, newY);
 			}
 
 			// TODO: input.attackPressed → CS_Attack 전송

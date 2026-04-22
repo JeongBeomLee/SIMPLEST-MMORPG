@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Common\Map.cpp" />
     <ClCompile Include="GameState.cpp" />
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="main.cpp" />
@@ -151,6 +152,10 @@
     <ClCompile Include="RingBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Common\Constants.h" />
+    <ClInclude Include="..\Common\Map.h" />
+    <ClInclude Include="..\Common\Protocol.h" />
+    <ClInclude Include="..\Common\Types.h" />
     <ClInclude Include="GameState.h" />
     <ClInclude Include="InputHandler.h" />
     <ClInclude Include="Logger.h" />
