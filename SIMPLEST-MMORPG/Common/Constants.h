@@ -29,7 +29,7 @@ constexpr int MAX_MONSTERS = 200000;
 constexpr uint32_t MONSTER_ID_OFFSET = 1000000;
 
 // 타이머 관련
-constexpr int MOVE_COOLDOWN_MS = 1000;
+constexpr int MOVE_COOLDOWN_MS = 500;
 constexpr int ATTACK_COOLDOWN_MS = 1000;
 constexpr int HP_REGEN_INTERVAL_MS = 5000;
 constexpr int MONSTER_RESPAWN_MS = 30000;

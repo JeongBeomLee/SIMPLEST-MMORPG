@@ -1,5 +1,6 @@
 ﻿#include "Renderer.h"
 #include "GameState.h"
+#include "Constants.h"
 #include <cwchar>
 
 namespace 
@@ -224,12 +225,30 @@ void Renderer::DrawViewport()
 		}
 	}
 
-	// 빈 타일 (시야 내 — walkable)
+	const Map& map = GameState::GetInstance().GetMap();
+	WORD treeColor = FOREGROUND_GREEN | FOREGROUND_INTENSITY;
 	for (int ty = 0; ty < VIEWPORT_TILES; ++ty)
 	{
 		for (int tx = 0; tx < VIEWPORT_TILES; ++tx)
 		{
-			DrawTile(tx, ty, L'.', emptyColor);
+			int worldX = tx - CENTER_TILE_X + me.x;
+			int worldY = ty - CENTER_TILE_Y + me.y;
+
+			bool outOfBounds = (worldX < 0 || worldX >= MAP_WIDTH ||
+				worldY < 0 || worldY >= MAP_HEIGHT);
+
+			if (outOfBounds)
+			{
+				DrawTile(tx, ty, L' ', 0);     // 맵 밖 — 빨간 블록
+			}
+			else if (map.IsWalkable(worldX, worldY))
+			{
+				DrawTile(tx, ty, L'.', emptyColor);   // 통과 가능
+			}
+			else
+			{
+				DrawTile(tx, ty, L'♣', treeColor);    // 장애물 — 나무
+			}
 		}
 	}
 

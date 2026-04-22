@@ -4,6 +4,7 @@
 #include "GameState.h"
 #include "Protocol.h"
 #include "Constants.h"
+#include "Logger.h"
 #include <chrono>
 #include <Windows.h>
 
@@ -20,6 +21,11 @@ int main()
 	Renderer& renderer = Renderer::GetInstance();
 	if (!renderer.Init())
 	{
+		return -1;
+	}
+
+	if (!GameState::GetInstance().Init()) {
+		LOG("GameState init failed - map file not found");
 		return -1;
 	}
 
@@ -87,18 +93,23 @@ int main()
 
 			if (input.hasMove)
 			{
-				CS_Move mp;
-				mp.header.size = sizeof(mp);
-				mp.header.type = static_cast<uint16_t>(PacketType::CS_MOVE);
-				mp.direction = static_cast<uint8_t>(input.moveDir);
-				client.SendPacket(&mp, sizeof(mp));
-
-				// 클라이언트 자기 위치 즉시 반영
-				GameState& state = GameState::GetInstance();
-				MyPlayer me = state.GetMyPlayer();
+				GameState& gameState = GameState::GetInstance();
+				MyPlayer me = gameState.GetMyPlayer();
 				int16_t newX = me.x + DX[static_cast<int>(input.moveDir)];
 				int16_t newY = me.y + DY[static_cast<int>(input.moveDir)];
-				state.MoveMyPlayer(newX, newY);
+
+				if (gameState.GetMap().IsWalkable(newX, newY))
+				{
+					// 서버 전송
+					CS_Move mp;
+					mp.header.size = sizeof(mp);
+					mp.header.type = static_cast<uint16_t>(PacketType::CS_MOVE);
+					mp.direction = static_cast<uint8_t>(input.moveDir);
+					client.SendPacket(&mp, sizeof(mp));
+
+					// 로컬 예측
+					gameState.MoveMyPlayer(newX, newY);
+				}
 			}
 
 			// TODO: input.attackPressed → CS_Attack 전송

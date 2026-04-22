@@ -6,6 +6,22 @@ GameState& GameState::GetInstance()
 	return instance;
 }
 
+bool GameState::Init()
+{
+	auto loaded = Map::TryLoad("Data/map_obstacles.dat");
+	if (loaded) 
+	{
+		m_map = std::move(*loaded);
+		return true;
+	}
+	return false;
+}
+
+const Map& GameState::GetMap() const
+{
+	return m_map;
+}
+
 void GameState::SetMyPlayer(const MyPlayer& me)
 {
 	std::lock_guard lock(m_mutex);

@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <string>
+#include "Map.h"
 #include "Types.h"
 
 struct RemoteObject
@@ -33,6 +34,9 @@ public:
 	GameState(const GameState&) = delete;
 	GameState& operator=(const GameState&) = delete;
 
+	bool Init();
+	const Map& GetMap() const;
+
 	// Login OK 처리 시 호출
 	void SetMyPlayer(const MyPlayer& me);
 
@@ -55,6 +59,7 @@ private:
 	~GameState() = default;
 
 private:
+	Map m_map;
 	MyPlayer m_me{};
 	bool m_loggedIn{ false };
 
