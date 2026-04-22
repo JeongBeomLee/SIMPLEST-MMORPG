@@ -49,8 +49,8 @@ namespace
 		const wchar_t* rows[FONT_ROWS];
 	};
 
-	// 0:S  1:I  2:M  3:P  4:L  5:E  6:T  7:O  8:R  9:G
-	const LetterDef FONT[] = {
+	const LetterDef FONT[] =
+	{
 		{ 5, { L" ███ ", L"█    ", L" ███ ", L"    █", L" ███ " } },  // S
 		{ 3, { L"███",   L" █ ",   L" █ ",   L" █ ",   L"███"   } },  // I
 		{ 5, { L"█   █", L"██ ██", L"█ █ █", L"█   █", L"█   █" } },  // M
@@ -71,7 +71,8 @@ namespace
 
 	constexpr int LETTER_GAP = 2;
 
-	const WORD RAINBOW_COLORS[] = {
+	const WORD RAINBOW_COLORS[] =
+	{
 		FOREGROUND_RED | FOREGROUND_INTENSITY,
 		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY,
 		FOREGROUND_GREEN | FOREGROUND_INTENSITY,
@@ -186,7 +187,8 @@ void Renderer::InitStars()
 {
 	srand((unsigned)time(nullptr));
 	const wchar_t starChars[] = { L'.', L'*', L'+', L'\'' };
-	const WORD starColors[] = {
+	const WORD starColors[] =
+	{
 		FOREGROUND_INTENSITY,
 		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE,
 		FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
@@ -317,7 +319,7 @@ void Renderer::RenderMainMenu(const std::wstring& nameInput)
 
 	// 안내 텍스트
 	DrawString(48, 23, L"[ ENTER ] to login", FOREGROUND_GREEN | FOREGROUND_INTENSITY);
-	DrawString(49, 24, L"[ ESC ] to quit", FOREGROUND_RED | FOREGROUND_INTENSITY);
+	DrawString(49, 25, L"[ ESC ] to quit", FOREGROUND_RED | FOREGROUND_INTENSITY);
 
 	Flush();
 }
@@ -409,8 +411,8 @@ void Renderer::DrawViewport()
 		WORD color;
 		if (obj.type == 0)
 		{
-			ch = L'P';
-			color = FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+			ch = L'☻';
+			color = FOREGROUND_BLUE | FOREGROUND_INTENSITY;
 		}
 		else
 		{
@@ -423,7 +425,7 @@ void Renderer::DrawViewport()
 
 	// 내 플레이어 (항상 중앙)
 	WORD myColor = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
-	DrawTile(CENTER_TILE_X, CENTER_TILE_Y, L'@', myColor);
+	DrawTile(CENTER_TILE_X, CENTER_TILE_Y, L'☻', myColor);
 }
 
 void Renderer::DrawHUD()

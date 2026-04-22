@@ -38,6 +38,10 @@ private:
 	void DrawHUD();
 	void DrawLogBox();
 
+	// 별 비 효과
+	void InitStars();
+	void UpdateAndDrawStars();
+
 private:
 	HANDLE m_hConsole{ INVALID_HANDLE_VALUE };
 
@@ -49,22 +53,19 @@ private:
 	std::deque<std::wstring> m_logLines;
 	mutable std::mutex m_logMutex;
 
-	int m_frameCount{ 0 };
-
 	// 별 비 효과
 	struct Star 
 	{
 		int x;
 		int y;
-		int speed;    // 몇 프레임마다 1칸 낙하
-		int ticker;   // 현재 틱
+		int speed; // 몇 프레임마다 1칸 낙하
+		int ticker; // 현재 틱
 		wchar_t ch;
 		WORD color;
 	};
 	static constexpr int MAX_STARS = 30;
 	Star m_stars[MAX_STARS]{};
 	bool m_starsInited{ false };
-	void InitStars();
-	void UpdateAndDrawStars();
+	int m_frameCount{ 0 };
 };
 
