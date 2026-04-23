@@ -8,6 +8,7 @@
 #include <vector>
 #include <cstdint>
 #include "../Network/NetworkTypes.h"
+#include "TimerOverlappedPool.h"
 
 struct TimerEvent
 {
@@ -38,6 +39,8 @@ public:
 	// 타이머 등록 (지연 시간 후 발사)
 	void AddTimer(TimerType type, uint32_t targetId, int delayMs);
 
+	void ReleaseTimerOverlapped(TimerOverlapped* tov) { m_pool.Release(tov); }
+
 private:
 	TimerManager() = default;
 	~TimerManager() = default;
@@ -50,6 +53,7 @@ private:
 	std::atomic<bool> m_running{ false };
 	std::thread m_thread;
 
+	TimerOverlappedPool m_pool{ 4096 };
 	std::priority_queue<TimerEvent, std::vector<TimerEvent>, std::greater<TimerEvent>> m_queue;
 	std::mutex m_mutex;
 	std::condition_variable m_cv;

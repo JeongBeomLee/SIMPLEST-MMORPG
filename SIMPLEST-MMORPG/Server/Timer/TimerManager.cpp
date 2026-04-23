@@ -76,17 +76,11 @@ void TimerManager::ThreadLoop()
 
 void TimerManager::PostToIOCP(const TimerEvent& ev)
 {
-	// 힙 할당 (워커가 처리 후 delete)
-	auto* tov = new TimerOverlapped();
+	TimerOverlapped* tov = m_pool.Acquire();
 	ZeroMemory(&tov->base.overlapped, sizeof(WSAOVERLAPPED));
 	tov->base.ioType = IOType::TIMER;
 	tov->type = ev.type;
 	tov->targetId = ev.targetId;
 
-	PostQueuedCompletionStatus(
-		m_hIOCP,
-		0,
-		0,
-		&tov->base.overlapped
-	);
+	PostQueuedCompletionStatus(m_hIOCP, 0, 0, &tov->base.overlapped);
 }

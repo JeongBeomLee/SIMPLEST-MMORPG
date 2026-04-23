@@ -2,13 +2,14 @@
 #include "Network/IOCPServer.h"
 #include "Game/GameWorld.h"
 #include "Constants.h"
+#include "Timer/TimerManager.h"
 
 int main()
 {
-	// 1. GameWorld 초기화 (Map 로드 + SectorManager 준비)
+	// GameWorld 초기화 (Map 로드 + SectorManager 준비)
 	GameWorld::GetInstance().Init();
 
-	// 2. IOCP 서버 시작
+	// IOCP 서버 시작
 	IOCPServer server;
 	if (!server.Init(SERVER_PORT))
 	{
@@ -16,7 +17,10 @@ int main()
 		return -1;
 	}
 
-	// 3. 종료 명령 대기
+	// TimerManager 시작
+	TimerManager::GetInstance().Start(server.GetIOCPHandle());
+
+	// 종료 명령 대기
 	std::cout << "Press 'q' + Enter to shutdown" << std::endl;
 	while (true)
 	{

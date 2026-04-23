@@ -151,7 +151,7 @@ void IOCPServer::WorkerThread()
 		{
 			TimerOverlapped* tov = reinterpret_cast<TimerOverlapped*>(ovEx);
 			GameWorld::GetInstance().HandleTimerEvent(tov->type, tov->targetId);
-			delete tov;
+			TimerManager::GetInstance().ReleaseTimerOverlapped(tov);
 			break;
 		}
 		}
