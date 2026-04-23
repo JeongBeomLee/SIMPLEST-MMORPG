@@ -8,6 +8,7 @@
 #include "SectorManager.h"
 #include "Player.h"
 #include "Monster.h"
+#include "../Network/NetworkTypes.h"
 
 class Session;
 
@@ -41,6 +42,9 @@ public:
 	// 몬스터 생성/조회
 	void SpawnMonsters();
 	Monster* GetMonster(ObjectID id);
+
+	// 타이머 이벤트 핸들러 (TimerManager -> IOCP worker -> HandleTimerEvent)
+	void HandleTimerEvent(TimerType type, uint32_t targetId);
 
 private:
 	GameWorld() = default;

@@ -17,6 +17,9 @@
     <Filter Include="Lua">
       <UniqueIdentifier>{02b4bdb6-f635-4d50-893e-5f6314333219}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Timer">
+      <UniqueIdentifier>{5f2e5171-e89b-465a-b92b-15d896e18987}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Network\RingBuffer.cpp">
@@ -57,6 +60,12 @@
     </ClCompile>
     <ClCompile Include="Game\Pathfinder.cpp">
       <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer\TimerManager.cpp">
+      <Filter>Timer</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer\TimerOverlappedPool.cpp">
+      <Filter>Timer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -113,6 +122,12 @@
     </ClInclude>
     <ClInclude Include="Game\Pathfinder.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer\TimerManager.h">
+      <Filter>Timer</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer\TimerOverlappedPool.h">
+      <Filter>Timer</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

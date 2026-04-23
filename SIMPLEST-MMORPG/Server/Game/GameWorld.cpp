@@ -212,3 +212,22 @@ Monster* GameWorld::GetMonster(ObjectID id)
 
 	return m_monsters[index].get();
 }
+
+void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
+{
+	switch (type)
+	{
+	case TimerType::HP_REGEN:
+		std::cout << "[Timer] HP_REGEN for " << targetId << std::endl;
+		break;
+	case TimerType::MONSTER_AI:
+		std::cout << "[Timer] MONSTER_AI batch " << targetId << std::endl;
+		break;
+	case TimerType::MONSTER_RESPAWN:
+		std::cout << "[Timer] MONSTER_RESPAWN " << targetId << std::endl;
+		break;
+	case TimerType::DB_SAVE:
+		std::cout << "[Timer] DB_SAVE" << std::endl;
+		break;
+	}
+}

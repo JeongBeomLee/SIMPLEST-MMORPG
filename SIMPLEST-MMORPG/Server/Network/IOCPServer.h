@@ -22,6 +22,8 @@ public:
 	bool Init(uint16_t port, int threadMultiplier = DEFAULT_THREAD_MULTIPLIER);
 	void ShutDown();
 
+	HANDLE GetIOCPHandle() const { return m_hIOCP; }
+
 private:
 	// 내부 동작
 	void WorkerThread();

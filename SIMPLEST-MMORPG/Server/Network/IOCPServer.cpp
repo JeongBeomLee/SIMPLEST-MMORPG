@@ -1,5 +1,6 @@
 ﻿#include "IOCPServer.h"
 #include "../Game/GameWorld.h"
+#include "../Timer/TimerManager.h"
 #include <iostream>
 #include <WS2tcpip.h>
 
@@ -125,7 +126,7 @@ void IOCPServer::WorkerThread()
 		OverlappedEx* ovEx = reinterpret_cast<OverlappedEx*>(overlapped);
 
 		// GQCS 실패 또는 연결 끊김
-		if (ret == FALSE || (bytes == 0 && ovEx->ioType != IOType::ACCEPT))
+		if (ret == FALSE || (bytes == 0 && ovEx->ioType != IOType::ACCEPT && ovEx->ioType != IOType::TIMER))
 		{
 			Session* session = m_sessions[key];
 			if (session != nullptr)
@@ -146,6 +147,13 @@ void IOCPServer::WorkerThread()
 		case IOType::SEND:
 			OnSend(m_sessions[key]);
 			break;
+		case IOType::TIMER:
+		{
+			TimerOverlapped* tov = reinterpret_cast<TimerOverlapped*>(ovEx);
+			GameWorld::GetInstance().HandleTimerEvent(tov->type, tov->targetId);
+			delete tov;
+			break;
+		}
 		}
 	}
 }
@@ -285,7 +293,12 @@ void IOCPServer::FreeSessionId(int id)
 
 void IOCPServer::ShutDown()
 {
-	if (!m_running) return;
+	if (!m_running)
+	{
+		return;
+	}
+
+	TimerManager::GetInstance().Stop();
 
 	m_running = false;
 

@@ -164,6 +164,8 @@
     <ClCompile Include="Network\PacketHandler.cpp" />
     <ClCompile Include="Network\RingBuffer.cpp" />
     <ClCompile Include="Network\Session.cpp" />
+    <ClCompile Include="Timer\TimerManager.cpp" />
+    <ClCompile Include="Timer\TimerOverlappedPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Constants.h" />
@@ -184,6 +186,8 @@
     <ClInclude Include="Network\PacketHandler.h" />
     <ClInclude Include="Network\RingBuffer.h" />
     <ClInclude Include="Network\Session.h" />
+    <ClInclude Include="Timer\TimerManager.h" />
+    <ClInclude Include="Timer\TimerOverlappedPool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
