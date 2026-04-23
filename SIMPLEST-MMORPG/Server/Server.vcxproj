@@ -154,6 +154,7 @@
     <ClCompile Include="..\Common\Map.cpp" />
     <ClCompile Include="Game\GameWorld.cpp" />
     <ClCompile Include="Game\Monster.cpp" />
+    <ClCompile Include="Game\Pathfinder.cpp" />
     <ClCompile Include="Game\Player.cpp" />
     <ClCompile Include="Game\SectorManager.cpp" />
     <ClCompile Include="Game\ViewProcessor.cpp" />
@@ -172,6 +173,7 @@
     <ClInclude Include="Game\GameObject.h" />
     <ClInclude Include="Game\GameWorld.h" />
     <ClInclude Include="Game\Monster.h" />
+    <ClInclude Include="Game\Pathfinder.h" />
     <ClInclude Include="Game\Player.h" />
     <ClInclude Include="Game\Sector.h" />
     <ClInclude Include="Game\SectorManager.h" />

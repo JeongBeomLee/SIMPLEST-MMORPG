@@ -1,5 +1,6 @@
 ﻿#include "GameWorld.h"
 #include "../Network/Session.h"
+#include "../Lua/LuaManager.h"
 #include "Protocol.h"
 #include "Types.h"
 #include "ViewProcessor.h"
@@ -23,6 +24,8 @@ void GameWorld::Init()
 		m_map = Map::CreateDefault();
 		m_map.SaveToFile("Data/map_obstacles.dat");
 	}
+
+	SpawnMonsters();
 }
 
 void GameWorld::Shutdown()
@@ -162,4 +165,50 @@ void GameWorld::SendToPlayer(ObjectID id, const void* data, uint16_t size)
 		return;
 	}
 	player->GetSession()->SendPacket(data, size);
+}
+
+void GameWorld::SpawnMonsters()
+{
+	auto spawns = LuaManager::GetInstance().LoadMonsterSpawns("Scripts/monster_spawn.lua");
+
+	m_monsters.reserve(spawns.size());
+
+	for (size_t i = 0; i < spawns.size(); ++i)
+	{
+		const auto& data = spawns[i];
+		ObjectID id = MONSTER_ID_OFFSET + static_cast<ObjectID>(i);
+
+		auto monster = std::make_unique<Monster>(
+			id,
+			data.name,
+			data.level,
+			data.maxHp,
+			data.behavior,
+			data.movement,
+			data.x, data.y
+		);
+
+		// 섹터에 등록
+		m_sectorManager.AddObject(id, data.x, data.y);
+
+		m_monsters.push_back(std::move(monster));
+	}
+
+	std::cout << "Spawned " << m_monsters.size() << " monsters" << std::endl;
+}
+
+Monster* GameWorld::GetMonster(ObjectID id)
+{
+	if (id < MONSTER_ID_OFFSET)
+	{
+		return nullptr;
+	}
+
+	size_t index = id - MONSTER_ID_OFFSET;
+	if (index >= m_monsters.size())
+	{
+		return nullptr;
+	}
+
+	return m_monsters[index].get();
 }

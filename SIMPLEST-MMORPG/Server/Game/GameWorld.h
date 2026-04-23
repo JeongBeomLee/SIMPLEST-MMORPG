@@ -1,11 +1,13 @@
 ﻿#pragma once
 #include <memory>
 #include <unordered_map>
+#include <vector>
 #include <shared_mutex>
 #include <string>
 #include "Map.h"
 #include "SectorManager.h"
 #include "Player.h"
+#include "Monster.h"
 
 class Session;
 
@@ -36,6 +38,10 @@ public:
 	Player* GetPlayer(ObjectID id);
 	void SendToPlayer(ObjectID id, const void* data, uint16_t size);
 
+	// 몬스터 생성/조회
+	void SpawnMonsters();
+	Monster* GetMonster(ObjectID id);
+
 private:
 	GameWorld() = default;
 	~GameWorld() = default;
@@ -50,4 +56,6 @@ private:
 
 	std::unordered_map<ObjectID, std::unique_ptr<Player>> m_players;
 	mutable std::shared_mutex m_playersMutex;
+
+	std::vector<std::unique_ptr<Monster>> m_monsters;
 };

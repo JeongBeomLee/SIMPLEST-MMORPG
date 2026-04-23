@@ -55,6 +55,9 @@
     <ClCompile Include="Lua\LuaManager.cpp">
       <Filter>Lua</Filter>
     </ClCompile>
+    <ClCompile Include="Game\Pathfinder.cpp">
+      <Filter>Game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Network\RingBuffer.h">
@@ -107,6 +110,9 @@
     </ClInclude>
     <ClInclude Include="Lua\LuaManager.h">
       <Filter>Lua</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Pathfinder.h">
+      <Filter>Game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

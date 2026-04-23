@@ -14,6 +14,38 @@ bool ViewProcessor::IsInView(int16_t px, int16_t py, int16_t ox, int16_t oy)
 	return dx <= HALF_VIEW && dy <= HALF_VIEW;
 }
 
+GameObject* ViewProcessor::GetObjectById(ObjectID id)
+{
+	GameWorld& world = GameWorld::GetInstance();
+	if (IsPlayerId(id))
+	{
+		return world.GetPlayer(id);
+	}
+	return world.GetMonster(id);
+}
+
+void ViewProcessor::SendAddObject(Player* receiver, const GameObject* target)
+{
+	if (!receiver || !target)
+	{
+		return;
+	}
+
+	SC_AddObject pkt;
+	pkt.header.size = sizeof(pkt);
+	pkt.header.type = static_cast<uint16_t>(PacketType::SC_ADD_OBJECT);
+	pkt.object_id = target->GetId();
+	pkt.object_type = static_cast<uint8_t>(target->GetType());
+	pkt.x = target->GetX();
+	pkt.y = target->GetY();
+	pkt.level = target->GetLevel();
+	pkt.hp = target->GetHp();
+	pkt.max_hp = target->GetMaxHp();
+	strncpy_s(pkt.name, sizeof(pkt.name), target->GetName().c_str(), _TRUNCATE);
+
+	receiver->GetSession()->SendPacket(&pkt, sizeof(pkt));
+}
+
 void ViewProcessor::SendRemoveObject(Player* receiver, ObjectID targetId)
 {
 	if (!receiver)
@@ -29,7 +61,7 @@ void ViewProcessor::SendRemoveObject(Player* receiver, ObjectID targetId)
 	receiver->GetSession()->SendPacket(&pkt, sizeof(pkt));
 }
 
-void ViewProcessor::SendMoveObject(Player* receiver, const Player* target)
+void ViewProcessor::SendMoveObject(Player* receiver, const GameObject* target)
 {
 	if (!receiver || !target)
 	{
@@ -67,7 +99,7 @@ void ViewProcessor::SendFullView(Player* me)
 			continue;
 		}
 
-		Player* other = world.GetPlayer(id);
+		GameObject* other = GetObjectById(id);
 		if (!other)
 		{
 			continue;
@@ -78,9 +110,15 @@ void ViewProcessor::SendFullView(Player* me)
 			continue;
 		}
 
-		// 나에게 상대 정보, 상대에게 내 정보
+		// 나에게 상대 정보
 		SendAddObject(me, other);
-		SendAddObject(other, me);
+
+		// 상대가 Player인 경우에만 역방향 전송
+		if (IsPlayerId(id))
+		{
+			Player* otherPlayer = static_cast<Player*>(other);
+			SendAddObject(otherPlayer, me);
+		}
 	}
 }
 
@@ -112,7 +150,7 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 			continue;
 		}
 
-		Player* other = world.GetPlayer(id);
+		GameObject* other = GetObjectById(id);
 		if (!other)
 		{
 			continue;
@@ -131,7 +169,7 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 			continue;
 		}
 
-		Player* other = world.GetPlayer(id);
+		GameObject* other = GetObjectById(id);
 		if (!other)
 		{
 			continue;
@@ -151,14 +189,18 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 			continue;
 		}
 
-		Player* other = world.GetPlayer(id);
+		GameObject* other = GetObjectById(id);
 		if (!other)
 		{
 			continue;
 		}
 
 		SendAddObject(me, other);
-		SendAddObject(other, me);
+
+		if (IsPlayerId(id))
+		{
+			SendAddObject(static_cast<Player*>(other), me);
+		}
 	}
 
 	// 3. 안 보이게 된 것 (oldView - newView): REMOVE 양방향
@@ -169,14 +211,22 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 			continue;
 		}
 
-		Player* other = world.GetPlayer(id);
+		GameObject* other = GetObjectById(id);
 		if (!other)
 		{
 			continue;
 		}
 
 		SendRemoveObject(me, id);
-		SendRemoveObject(other, myId);
+		
+		if (IsPlayerId(id))
+		{
+			Player* otherPlayer = world.GetPlayer(id);
+			if (otherPlayer)
+			{
+				SendRemoveObject(otherPlayer, myId);
+			}
+		}
 	}
 
 	// 4. 계속 보이는 것 (교집합): 상대에게만 MOVE(나)
@@ -187,13 +237,14 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 			continue;
 		}
 
-		Player* other = world.GetPlayer(id);
-		if (!other)
-		{
-			continue;
-		}
+		// 몬스터는 세션이 없으므로 플레이어에게만 전송
+		if (!IsPlayerId(id)) continue;
 
-		SendMoveObject(other, me);
+		Player* otherPlayer = world.GetPlayer(id);
+		if (otherPlayer)
+		{
+			SendMoveObject(otherPlayer, me);
+		}
 	}
 }
 
@@ -214,39 +265,22 @@ void ViewProcessor::SendDisappear(Player* me)
 			continue;
 		}
 
-		Player* other = world.GetPlayer(id);
-		if (!other)
+		if (!IsPlayerId(id))
 		{
 			continue;
 		}
 
-		if (!IsInView(mx, my, other->GetX(), other->GetY()))
+		Player* otherPlayer = world.GetPlayer(id);
+		if (!otherPlayer)
 		{
 			continue;
 		}
 
-		SendRemoveObject(other, me->GetId());
+		if (!IsInView(mx, my, otherPlayer->GetX(), otherPlayer->GetY()))
+		{
+			continue;
+		}
+
+		SendRemoveObject(otherPlayer, me->GetId());
 	}
-}
-
-void ViewProcessor::SendAddObject(Player* receiver, const Player* target)
-{
-	if (!receiver || !target)
-	{
-		return;
-	}
-
-	SC_AddObject pkt;
-	pkt.header.size = sizeof(pkt);
-	pkt.header.type = static_cast<uint16_t>(PacketType::SC_ADD_OBJECT);
-	pkt.object_id = target->GetId();
-	pkt.object_type = static_cast<uint8_t>(target->GetType());
-	pkt.x = target->GetX();
-	pkt.y = target->GetY();
-	pkt.level = target->GetLevel();
-	pkt.hp = target->GetHp();
-	pkt.max_hp = target->GetMaxHp();
-	strncpy_s(pkt.name, sizeof(pkt.name), target->GetName().c_str(), _TRUNCATE);
-
-	receiver->GetSession()->SendPacket(&pkt, sizeof(pkt));
 }
