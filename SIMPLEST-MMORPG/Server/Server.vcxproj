@@ -157,6 +157,7 @@
     <ClCompile Include="Game\Player.cpp" />
     <ClCompile Include="Game\SectorManager.cpp" />
     <ClCompile Include="Game\ViewProcessor.cpp" />
+    <ClCompile Include="Lua\LuaManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Network\IOCPServer.cpp" />
     <ClCompile Include="Network\PacketHandler.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="Game\Sector.h" />
     <ClInclude Include="Game\SectorManager.h" />
     <ClInclude Include="Game\ViewProcessor.h" />
+    <ClInclude Include="Lua\LuaManager.h" />
     <ClInclude Include="Network\IOCPServer.h" />
     <ClInclude Include="Network\NetworkTypes.h" />
     <ClInclude Include="Network\PacketHandler.h" />

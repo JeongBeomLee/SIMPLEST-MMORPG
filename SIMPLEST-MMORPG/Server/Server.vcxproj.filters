@@ -14,6 +14,9 @@
     <Filter Include="Common">
       <UniqueIdentifier>{4935f207-0c75-4fbb-9305-24eabfaef719}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Lua">
+      <UniqueIdentifier>{02b4bdb6-f635-4d50-893e-5f6314333219}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Network\RingBuffer.cpp">
@@ -48,6 +51,9 @@
     </ClCompile>
     <ClCompile Include="Game\Monster.cpp">
       <Filter>Game</Filter>
+    </ClCompile>
+    <ClCompile Include="Lua\LuaManager.cpp">
+      <Filter>Lua</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -98,6 +104,9 @@
     </ClInclude>
     <ClInclude Include="Game\Monster.h">
       <Filter>Game</Filter>
+    </ClInclude>
+    <ClInclude Include="Lua\LuaManager.h">
+      <Filter>Lua</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
