@@ -19,6 +19,7 @@ int main()
 
 	// TimerManager 시작
 	TimerManager::GetInstance().Start(server.GetIOCPHandle());
+	GameWorld::GetInstance().StartAITimer();
 
 	// 종료 명령 대기
 	std::cout << "Press 'q' + Enter to shutdown" << std::endl;

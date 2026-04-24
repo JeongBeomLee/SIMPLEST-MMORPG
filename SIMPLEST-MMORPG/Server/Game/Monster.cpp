@@ -1,4 +1,6 @@
 ﻿#include "Monster.h"
+#include "GameWorld.h"
+#include <random>
 
 Monster::Monster(ObjectID id,
 	const std::string& name,
@@ -47,4 +49,52 @@ int32_t Monster::GetExpReward() const
 	}
 
 	return base;
+}
+
+void Monster::AITick()
+{
+	MonsterBehavior behavior = m_behavior;
+	MonsterMovement movement = m_movement;
+
+	if (IsDead())
+	{
+		return;
+	}
+
+	if (movement == MonsterMovement::FIXED)
+	{
+		return;
+	}
+
+	if (behavior == MonsterBehavior::PEACE)
+	{
+		RoamingMove();
+	}
+	else if (behavior == MonsterBehavior::AGRO)
+	{
+		// AgroPursue 대신 RoamingMove 로 임시 대체
+		RoamingMove();
+	}
+}
+
+void Monster::RoamingMove()
+{
+	GameWorld& world = GameWorld::GetInstance();
+
+	Position curPos = GetPos();
+
+	thread_local std::mt19937 rng(std::random_device{}());
+	std::uniform_int_distribution<int> dirDist(0, 3);
+	int dir = dirDist(rng);
+
+	int16_t newX = curPos.x + DX[dir];
+	int16_t newY = curPos.y + DY[dir];
+
+	Position spawnPos = m_spawnPos;
+	if (!IsInRoamingRange(spawnPos.x, spawnPos.y))
+	{
+		return;
+	}
+
+	world.MoveMonster(this, newX, newY);
 }

@@ -1,6 +1,7 @@
 ﻿#include "GameWorld.h"
 #include "../Network/Session.h"
 #include "../Lua/LuaManager.h"
+#include "../Timer/TimerManager.h"
 #include "Protocol.h"
 #include "Types.h"
 #include "ViewProcessor.h"
@@ -218,13 +219,64 @@ Monster* GameWorld::GetMonster(ObjectID id)
 	return m_monsters[index].get();
 }
 
+void GameWorld::MoveMonster(Monster* monster, int16_t newX, int16_t newY)
+{
+	if (!monster)
+	{
+		return;
+	}
+
+	Position oldPos = monster->GetPos();
+	int16_t oldX = oldPos.x, oldY = oldPos.y;
+
+	monster->SetPos(newX, newY);
+	m_sectorManager.MoveObject(monster->GetId(), oldX, oldY, newX, newY);
+
+	auto nearbyIds = m_sectorManager.GetNearbyObjects(newX, newY);
+
+	for (ObjectID pid : nearbyIds)
+	{
+		if (pid >= MONSTER_ID_OFFSET)
+		{
+			continue;
+		}
+
+		auto player = GetPlayer(pid);
+		if (!player)
+		{
+			continue;
+		}
+
+		Position playerPos = player->GetPos();
+		if (!ViewProcessor::IsInView(playerPos.x, playerPos.y, newX, newY))
+		{
+			continue;
+		}
+
+		SC_MoveObject pkt;
+		pkt.header.size = sizeof(pkt);
+		pkt.header.type = static_cast<uint16_t>(PacketType::SC_MOVE_OBJECT);
+		pkt.object_id = monster->GetId();
+		pkt.x = newX;
+		pkt.y = newY;
+		player->GetSession()->SendPacket(&pkt, sizeof(pkt));
+	}
+}
+
 void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 {
 	switch (type)
 	{
 	case TimerType::HP_REGEN:
-		std::cout << "[Timer] HP_REGEN for " << targetId << std::endl;
+	{
+		for (auto& m : m_monsters)
+		{
+			m->AITick();
+		}
+
+		TimerManager::GetInstance().AddTimer(TimerType::MONSTER_AI, 0, MONSTER_AI_TICK_MS);
 		break;
+	}
 	case TimerType::MONSTER_AI:
 		std::cout << "[Timer] MONSTER_AI batch " << targetId << std::endl;
 		break;
@@ -235,4 +287,9 @@ void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 		std::cout << "[Timer] DB_SAVE" << std::endl;
 		break;
 	}
+}
+
+void GameWorld::StartAITimer()
+{
+	TimerManager::GetInstance().AddTimer(TimerType::MONSTER_AI, 0, MONSTER_AI_TICK_MS);
 }

@@ -35,16 +35,18 @@ public:
 	SectorManager& GetSectorManager() { return m_sectorManager; }
 	const SectorManager& GetSectorManager() const { return m_sectorManager; }
 
-	// 플레이어 조회/전송
+	// 플레이어 관련
 	std::shared_ptr<Player> GetPlayer(ObjectID id);
 	void SendToPlayer(ObjectID id, const void* data, uint16_t size);
 
-	// 몬스터 생성/조회
+	// 몬스터 관련
 	void SpawnMonsters();
 	Monster* GetMonster(ObjectID id);
+	void MoveMonster(Monster* monster, int16_t newX, int16_t newY);
 
 	// 타이머 이벤트 핸들러 (TimerManager -> IOCP worker -> HandleTimerEvent)
 	void HandleTimerEvent(TimerType type, uint32_t targetId);
+	void StartAITimer();
 
 private:
 	GameWorld() = default;

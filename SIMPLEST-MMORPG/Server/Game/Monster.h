@@ -56,6 +56,16 @@ public:
 		return m_targetPlayerId.has_value();
 	}
 
+	void AITick();
+
+private:
+	void RoamingMove();
+	bool IsInRoamingRange(int16_t x, int16_t y) const 
+	{ 
+		return std::abs(x - m_spawnPos.x) <= ROAMING_RANGE 
+			&& std::abs(y - m_spawnPos.y) <= ROAMING_RANGE;
+	}
+
 private:
 	const MonsterBehavior m_behavior;
 	const MonsterMovement m_movement;
