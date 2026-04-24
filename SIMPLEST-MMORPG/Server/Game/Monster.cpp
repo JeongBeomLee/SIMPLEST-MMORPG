@@ -91,7 +91,12 @@ void Monster::RoamingMove()
 	int16_t newY = curPos.y + DY[dir];
 
 	Position spawnPos = m_spawnPos;
-	if (!IsInRoamingRange(spawnPos.x, spawnPos.y))
+	if (!IsInRoamingRange(newX, newY))
+	{
+		return;
+	}
+
+	if (!world.GetMap().IsWalkable(newX, newY))
 	{
 		return;
 	}

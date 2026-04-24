@@ -232,35 +232,7 @@ void GameWorld::MoveMonster(Monster* monster, int16_t newX, int16_t newY)
 	monster->SetPos(newX, newY);
 	m_sectorManager.MoveObject(monster->GetId(), oldX, oldY, newX, newY);
 
-	auto nearbyIds = m_sectorManager.GetNearbyObjects(newX, newY);
-
-	for (ObjectID pid : nearbyIds)
-	{
-		if (pid >= MONSTER_ID_OFFSET)
-		{
-			continue;
-		}
-
-		auto player = GetPlayer(pid);
-		if (!player)
-		{
-			continue;
-		}
-
-		Position playerPos = player->GetPos();
-		if (!ViewProcessor::IsInView(playerPos.x, playerPos.y, newX, newY))
-		{
-			continue;
-		}
-
-		SC_MoveObject pkt;
-		pkt.header.size = sizeof(pkt);
-		pkt.header.type = static_cast<uint16_t>(PacketType::SC_MOVE_OBJECT);
-		pkt.object_id = monster->GetId();
-		pkt.x = newX;
-		pkt.y = newY;
-		player->GetSession()->SendPacket(&pkt, sizeof(pkt));
-	}
+	ViewProcessor::ProcessMoveView(monster, oldX, oldY);
 }
 
 void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
@@ -268,6 +240,10 @@ void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 	switch (type)
 	{
 	case TimerType::HP_REGEN:
+		std::cout << "[Timer] HP_REGEN " << targetId << std::endl;
+		break;
+	
+	case TimerType::MONSTER_AI:
 	{
 		for (auto& m : m_monsters)
 		{
@@ -277,9 +253,6 @@ void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 		TimerManager::GetInstance().AddTimer(TimerType::MONSTER_AI, 0, MONSTER_AI_TICK_MS);
 		break;
 	}
-	case TimerType::MONSTER_AI:
-		std::cout << "[Timer] MONSTER_AI batch " << targetId << std::endl;
-		break;
 	case TimerType::MONSTER_RESPAWN:
 		std::cout << "[Timer] MONSTER_RESPAWN " << targetId << std::endl;
 		break;

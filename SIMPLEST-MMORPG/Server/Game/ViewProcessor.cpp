@@ -129,30 +129,33 @@ void ViewProcessor::SendFullView(Player* me)
 	}
 }
 
-void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
+void ViewProcessor::ProcessMoveView(GameObject* moved, int16_t oldX, int16_t oldY)
 {
-	if (!me)
+	if (!moved)
 	{
 		return;
 	}
 
 	GameWorld& world = GameWorld::GetInstance();
-	SectorManager& sm = world.GetSectorManager();
+	SectorManager& sectorManager = world.GetSectorManager();
 
-	Position newPos = me->GetPos();
+	Position newPos = moved->GetPos();
 	int16_t newX = newPos.x, newY = newPos.y;
-	ObjectID myId = me->GetId();
+	ObjectID movedId = moved->GetId();
+
+	bool movedIsPlayer = (moved->GetType() == ObjectType::PLAYER);
+	Player* movedPlayer = movedIsPlayer ? static_cast<Player*>(moved) : nullptr;
 
 	// 1. 두 시야 집합 계산
-	auto oldNearby = sm.GetNearbyObjects(oldX, oldY);
-	auto newNearby = sm.GetNearbyObjects(newX, newY);
+	auto oldNearby = sectorManager.GetNearbyObjects(oldX, oldY);
+	auto newNearby = sectorManager.GetNearbyObjects(newX, newY);
 
 	std::unordered_set<ObjectID> oldView;
 	std::unordered_set<ObjectID> newView;
 
 	for (ObjectID id : oldNearby)
 	{
-		if (id == myId)
+		if (id == movedId)
 		{
 			continue;
 		}
@@ -166,13 +169,20 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 			}
 
 			Position op = otherPlayer->GetPos();
-			if (IsInView(oldX, oldY, op.x, op.y))
+			if (IsInView(op.x, op.y, oldX, oldY))
 			{
 				oldView.insert(id);
 			}
 		}
 		else
 		{
+			// moved 가 Monster 면 다른 Monster 는 무시 (서로 몬스터끼리 ADD/REMOVE 불필요)
+			// moved 가 Player 면 Monster 도 본인 시야에 포함
+			if (!movedIsPlayer)
+			{
+				continue;
+			}
+
 			Monster* monster = world.GetMonster(id);
 			if (!monster)
 			{
@@ -189,7 +199,7 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 
 	for (ObjectID id : newNearby)
 	{
-		if (id == myId)
+		if (id == movedId)
 		{
 			continue;
 		}
@@ -203,13 +213,18 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 			}
 
 			Position op = otherPlayer->GetPos();
-			if (IsInView(newX, newY, op.x, op.y))
+			if (IsInView(op.x, op.y, newX, newY))
 			{
 				newView.insert(id);
 			}
 		}
 		else
 		{
+			if (!movedIsPlayer)
+			{
+				continue;
+			}
+
 			Monster* monster = world.GetMonster(id);
 			if (!monster)
 			{
@@ -240,18 +255,29 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 				continue;
 			}
 
-			SendAddObject(me, otherPlayer.get());
-			SendAddObject(otherPlayer.get(), me);
+			// 관찰자에게 moved 알림
+			SendAddObject(otherPlayer.get(), moved);
+
+			// moved 가 Player 면 본인에게도 other 알림
+			if (movedPlayer)
+			{
+				SendAddObject(movedPlayer, otherPlayer.get());
+			}
 		}
 		else
 		{
+			if (!movedPlayer)
+			{
+				continue;
+			}
+
 			Monster* monster = world.GetMonster(id);
 			if (!monster)
 			{
 				continue;
 			}
 
-			SendAddObject(me, monster);
+			SendAddObject(movedPlayer, monster);
 		}
 	}
 
@@ -263,14 +289,24 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 			continue;
 		}
 
-		SendRemoveObject(me, id);
-
 		if (IsPlayerId(id))
 		{
 			auto otherPlayer = world.GetPlayer(id);
 			if (otherPlayer)
 			{
-				SendRemoveObject(otherPlayer.get(), myId);
+				SendRemoveObject(otherPlayer.get(), movedId);
+			}
+
+			if (movedPlayer)
+			{
+				SendRemoveObject(movedPlayer, id);
+			}
+		}
+		else
+		{
+			if (movedPlayer)
+			{
+				SendRemoveObject(movedPlayer, id);
 			}
 		}
 	}
@@ -291,7 +327,7 @@ void ViewProcessor::ProcessMoveView(Player* me, int16_t oldX, int16_t oldY)
 		auto otherPlayer = world.GetPlayer(id);
 		if (otherPlayer)
 		{
-			SendMoveObject(otherPlayer.get(), me);
+			SendMoveObject(otherPlayer.get(), moved);
 		}
 	}
 }
