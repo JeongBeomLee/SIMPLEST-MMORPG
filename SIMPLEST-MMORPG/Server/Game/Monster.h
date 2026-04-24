@@ -3,6 +3,7 @@
 #include "Types.h"
 #include <chrono>
 #include <optional>
+#include <shared_mutex>
 
 class Monster : public GameObject
 {
@@ -24,21 +25,41 @@ public:
 	// 사망 / 리스폰
 	void Die();
 	void Respawn();
-	std::chrono::steady_clock::time_point GetDeathTime() const { return m_deathTime; }
+	std::chrono::steady_clock::time_point GetDeathTime() const
+	{
+		std::shared_lock lock(m_lock);
+		return m_deathTime;
+	}
 
 	// 경험치 보상
 	int32_t GetExpReward() const;
 
 	// 타겟 관리 (Agro 용)
-	std::optional<ObjectID> GetTargetPlayerId() const { return m_targetPlayerId; }
-	void SetTargetPlayerId(ObjectID id) { m_targetPlayerId = id; }
-	void ClearTarget() { m_targetPlayerId.reset(); }
-	bool HasTarget() const { return m_targetPlayerId.has_value(); }
+	std::optional<ObjectID> GetTargetPlayerId() const
+	{
+		std::shared_lock lock(m_lock);
+		return m_targetPlayerId;
+	}
+	void SetTargetPlayerId(ObjectID id)
+	{
+		std::unique_lock lock(m_lock);
+		m_targetPlayerId = id;
+	}
+	void ClearTarget()
+	{
+		std::unique_lock lock(m_lock);
+		m_targetPlayerId.reset();
+	}
+	bool HasTarget() const 
+	{
+		std::shared_lock lock(m_lock);
+		return m_targetPlayerId.has_value();
+	}
 
 private:
-	MonsterBehavior m_behavior;
-	MonsterMovement m_movement;
-	Position m_spawnPos;
+	const MonsterBehavior m_behavior;
+	const MonsterMovement m_movement;
+	const Position m_spawnPos;
 
 	std::optional<ObjectID> m_targetPlayerId;
 

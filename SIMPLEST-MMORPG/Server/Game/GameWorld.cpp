@@ -44,7 +44,7 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 	ObjectID id = AddPlayer(session, name);
 
 	// 3. SC_LoginOk 패킷 전송
-	Player* player = GetPlayer(id);
+	auto player = GetPlayer(id);
 	if (!player)
 	{
 		return;
@@ -54,23 +54,26 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 	okPkt.header.size = sizeof(okPkt);
 	okPkt.header.type = static_cast<uint16_t>(PacketType::SC_LOGIN_OK);
 	okPkt.my_id = id;
-	okPkt.x = player->GetX();
-	okPkt.y = player->GetY();
 	okPkt.level = player->GetLevel();
 	okPkt.exp = player->GetExp();
 	okPkt.hp = player->GetHp();
 	okPkt.max_hp = player->GetMaxHp();
+
+	Position pp = player->GetPos();
+	okPkt.x = pp.x;
+	okPkt.y = pp.y;
+
 	session->SendPacket(&okPkt, sizeof(okPkt));
 
 	// 4. 시야 내 객체들을 나에게 + 나를 시야 내 플레이어에게
-	ViewProcessor::SendFullView(player);
+	ViewProcessor::SendFullView(player.get());
 }
 
 ObjectID GameWorld::AddPlayer(Session* session, const std::string& name)
 {
 	ObjectID id = session->GetId();   // 세션 ID = Player ID
 
-	auto player = std::make_unique<Player>(id, session, name);
+	auto player = std::make_shared<Player>(id, session, name);
 	Position spawnPos = { 0, 0 };  // 초기 스폰 위치
 	player->SetPos(spawnPos.x, spawnPos.y);
 
@@ -93,7 +96,7 @@ void GameWorld::RemovePlayer(ObjectID id)
 void GameWorld::ProcessMove(Session* session, const char* data)
 {
 	ObjectID id = session->GetId();
-	Player* player = GetPlayer(id);
+	auto player = GetPlayer(id);
 	if (!player)
 	{
 		return;
@@ -108,9 +111,10 @@ void GameWorld::ProcessMove(Session* session, const char* data)
 	// 2. 패킷 파싱
 	const CS_Move* pkt = reinterpret_cast<const CS_Move*>(data);
 	Direction dir = static_cast<Direction>(pkt->direction);
+	Position oldPos = player->GetPos();
 
-	int16_t oldX = player->GetX();
-	int16_t oldY = player->GetY();
+	int16_t oldX = oldPos.x;
+	int16_t oldY = oldPos.y;
 	int16_t newX = oldX + DX[static_cast<int>(dir)];
 	int16_t newY = oldY + DY[static_cast<int>(dir)];
 
@@ -128,38 +132,39 @@ void GameWorld::ProcessMove(Session* session, const char* data)
 	m_sectorManager.MoveObject(id, oldX, oldY, newX, newY);
 
 	// 6. 시야 diff 처리
-	ViewProcessor::ProcessMoveView(player, oldX, oldY);
+	ViewProcessor::ProcessMoveView(player.get(), oldX, oldY);
 }
 
 void GameWorld::ProcessDisconnect(Session* session)
 {
 	ObjectID id = session->GetId();
-	Player* player = GetPlayer(id);
+	auto player = GetPlayer(id);
 	if (!player)
 	{
 		return;
 	}
 
 	// 1. 시야 내 플레이어에게 SC_RemoveObject 전송
-	ViewProcessor::SendDisappear(player);
+	ViewProcessor::SendDisappear(player.get());
 
 	// 2. 섹터에서 제거
-	m_sectorManager.RemoveObject(id, player->GetX(), player->GetY());
+	Position dp = player->GetPos();
+	m_sectorManager.RemoveObject(id, dp.x, dp.y);
 
 	// 3. m_players 에서 제거
 	RemovePlayer(id);
 }
 
-Player* GameWorld::GetPlayer(ObjectID id)
+std::shared_ptr<Player> GameWorld::GetPlayer(ObjectID id)
 {
 	std::shared_lock lock(m_playersMutex);
 	auto it = m_players.find(id);
-	return (it != m_players.end()) ? it->second.get() : nullptr;
+	return (it != m_players.end()) ? it->second : nullptr;
 }
 
 void GameWorld::SendToPlayer(ObjectID id, const void* data, uint16_t size)
 {
-	Player* player = GetPlayer(id);
+	auto player = GetPlayer(id);
 	if (!player)
 	{
 		return;

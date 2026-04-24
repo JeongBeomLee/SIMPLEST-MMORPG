@@ -22,9 +22,6 @@ private:
 	// 시야 판정: 중심 (px, py) 와 대상 (ox, oy) 가 15×15 시야 내인가
 	static bool IsInView(int16_t px, int16_t py, int16_t ox, int16_t oy);
 
-	// ID → GameObject 조회 (Player 또는 Monster)
-	static GameObject* GetObjectById(ObjectID id);
-
 	// ID 가 플레이어인지 여부
 	static bool IsPlayerId(ObjectID id) { return id < MONSTER_ID_OFFSET; }
 

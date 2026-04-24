@@ -36,7 +36,7 @@ public:
 	const SectorManager& GetSectorManager() const { return m_sectorManager; }
 
 	// 플레이어 조회/전송
-	Player* GetPlayer(ObjectID id);
+	std::shared_ptr<Player> GetPlayer(ObjectID id);
 	void SendToPlayer(ObjectID id, const void* data, uint16_t size);
 
 	// 몬스터 생성/조회
@@ -58,7 +58,7 @@ private:
 	Map m_map;
 	SectorManager m_sectorManager;
 
-	std::unordered_map<ObjectID, std::unique_ptr<Player>> m_players;
+	std::unordered_map<ObjectID, std::shared_ptr<Player>> m_players;
 	mutable std::shared_mutex m_playersMutex;
 
 	std::vector<std::unique_ptr<Monster>> m_monsters;
