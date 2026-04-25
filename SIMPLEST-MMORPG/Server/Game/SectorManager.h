@@ -24,14 +24,12 @@ public:
 
 	// 범위 쿼리 - 중심 좌표 기준 3x3 인접 섹터 순회
 	std::vector<ObjectID> GetNearbyObjects(int16_t x, int16_t y) const;
+	ObjectID GetOccupant(int16_t x, int16_t y) const;
 
 	// lock-free 타일 점유 관리
 	bool TryClaim(int16_t x, int16_t y, ObjectID id);
-	void Release(int16_t x, int16_t y, ObjectID id);
-
-	// 인접 영역 탐색 + 점유 시도. 성공한 위치 반환 (Position).
-	// 실패 시 INVALID_ID 반환
 	bool TryClaimNearby(ObjectID id, int16_t cx, int16_t cy, int maxRadius, const Map& map, int16_t& outX, int16_t& outY);
+	void Release(int16_t x, int16_t y, ObjectID id);
 
 private:
 	Sector& GetSector(int sx, int sy);

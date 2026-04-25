@@ -4,6 +4,7 @@
 #include <chrono>
 #include <optional>
 #include <shared_mutex>
+#include <atomic>
 
 class Monster : public GameObject
 {
@@ -57,6 +58,9 @@ public:
 	}
 
 	void AITick();
+	bool TryActivate();
+	void Deactivate();
+	bool IsActive() const { return m_isActive.load(std::memory_order_relaxed); }
 
 private:
 	void RoamingMove();
@@ -73,8 +77,8 @@ private:
 	const MonsterMovement m_movement;
 	const Position m_spawnPos;
 
+	std::atomic<bool> m_isActive{ false };
 	std::optional<ObjectID> m_targetPlayerId;
-
 	std::chrono::steady_clock::time_point m_deathTime{};
 };
 

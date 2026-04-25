@@ -38,11 +38,11 @@ void GameWorld::Shutdown()
 
 void GameWorld::ProcessLogin(Session* session, const char* data)
 {
-	// 1. 패킷 파싱
+	// 패킷 파싱
 	const CS_Login* pkt = reinterpret_cast<const CS_Login*>(data);
 	std::string name(pkt->name);
 
-	// 2. 플레이어 생성 + 월드 등록
+	// 플레이어 생성 + 월드 등록
 	ObjectID id = AddPlayer(session, name);
 	if (id == INVALID_PLAYER_ID)
 	{
@@ -54,7 +54,7 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 		return;
 	}
 
-	// 3. SC_LoginOk 패킷 전송
+	// SC_LoginOk 패킷 전송
 	auto player = GetPlayer(id);
 	if (!player)
 	{
@@ -70,14 +70,17 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 	okPkt.hp = player->GetHp();
 	okPkt.max_hp = player->GetMaxHp();
 
-	Position pp = player->GetPos();
-	okPkt.x = pp.x;
-	okPkt.y = pp.y;
+	Position playerPos = player->GetPos();
+	okPkt.x = playerPos.x;
+	okPkt.y = playerPos.y;
 
 	session->SendPacket(&okPkt, sizeof(okPkt));
 
-	// 4. 시야 내 객체들을 나에게 + 나를 시야 내 플레이어에게
+	// 시야 내 객체들을 나에게 + 나를 시야 내 플레이어에게
 	ViewProcessor::SendFullView(player.get());
+
+	// 시야 내 몬스터 AI 깨우기
+	ActivateNearbyMonsters(playerPos.x, playerPos.y);
 }
 
 ObjectID GameWorld::AddPlayer(Session* session, const std::string& name)
@@ -107,6 +110,69 @@ void GameWorld::RemovePlayer(ObjectID id)
 {
 	std::unique_lock lock(m_playersMutex);
 	m_players.erase(id);
+}
+
+void GameWorld::ActivateNearbyMonsters(int16_t x, int16_t y)
+{
+	auto nearbyIds = m_sectorManager.GetNearbyObjects(x, y);
+	for (ObjectID id : nearbyIds)
+	{
+		if (id < MONSTER_ID_OFFSET)
+		{
+			continue;
+		}
+
+		Monster* monster = GetMonster(id);
+		if (!monster)
+		{
+			continue;
+		}
+		if (monster->IsDead())
+		{
+			continue;
+		}
+
+		Position mp = monster->GetPos();
+		if (!ViewProcessor::IsInView(x, y, mp.x, mp.y))
+		{
+			continue;
+		}
+
+		if (monster->TryActivate())
+		{
+			// AI 타이머 등록
+			TimerManager::GetInstance().AddTimer(TimerType::MONSTER_AI, id, MONSTER_AI_TICK_MS);
+		}
+	}
+}
+
+bool GameWorld::HasObserverNearby(Monster* monster) const
+{
+	Position monsterPos = monster->GetPos();
+	auto nearbyIds = m_sectorManager.GetNearbyObjects(monsterPos.x, monsterPos.y);
+
+	for (ObjectID id : nearbyIds)
+	{
+		if (id >= MONSTER_ID_OFFSET)
+		{
+			continue;
+		}
+
+		// const 메서드라 const_cast
+		auto player = const_cast<GameWorld*>(this)->GetPlayer(id);
+		if (!player)
+		{
+			continue;
+		}
+
+		Position playerPos = player->GetPos();
+		if (ViewProcessor::IsInView(playerPos.x, playerPos.y, monsterPos.x, monsterPos.y))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void GameWorld::ProcessMove(Session* session, const char* data)
@@ -152,6 +218,7 @@ void GameWorld::ProcessMove(Session* session, const char* data)
 
 	// 시야 diff 처리
 	ViewProcessor::ProcessMoveView(player.get(), oldX, oldY);
+	ActivateNearbyMonsters(newX, newY);
 }
 
 void GameWorld::ProcessDisconnect(Session* session)
@@ -311,12 +378,26 @@ void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 	
 	case TimerType::MONSTER_AI:
 	{
-		for (auto& m : m_monsters)
+		Monster* monster = GetMonster(targetId);
+		if (!monster)
 		{
-			m->AITick();
+			break;
+		}
+		if (monster->IsDead())
+		{
+			break;
 		}
 
-		TimerManager::GetInstance().AddTimer(TimerType::MONSTER_AI, 0, MONSTER_AI_TICK_MS);
+		// 시야 내 플레이어 확인
+		if (!HasObserverNearby(monster))
+		{
+			monster->Deactivate();
+			break;
+		}
+
+		// AI 실행
+		monster->AITick();
+		TimerManager::GetInstance().AddTimer(TimerType::MONSTER_AI, targetId, MONSTER_AI_TICK_MS);
 		break;
 	}
 	case TimerType::MONSTER_RESPAWN:
@@ -326,9 +407,4 @@ void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 		std::cout << "[Timer] DB_SAVE" << std::endl;
 		break;
 	}
-}
-
-void GameWorld::StartAITimer()
-{
-	TimerManager::GetInstance().AddTimer(TimerType::MONSTER_AI, 0, MONSTER_AI_TICK_MS);
 }

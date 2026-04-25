@@ -14,7 +14,8 @@ enum class PacketType : uint16_t
 	SC_MOVE_OBJECT,
 	SC_STAT_CHANGE,
 	SC_CHAT,
-	SC_COMBAT_MSG
+	SC_COMBAT_MSG,
+	SC_ATTACK_EFFECT
 };
 
 // 1바이트 정렬 강제
@@ -114,5 +115,12 @@ struct SC_CombatMessage
 	int32_t damage;
 };
 
+struct SC_AttackEffect
+{
+	PacketHeader header;
+	uint32_t attacker_id;
+	int16_t x;
+	int16_t y;
+};
 
 #pragma pack(pop)

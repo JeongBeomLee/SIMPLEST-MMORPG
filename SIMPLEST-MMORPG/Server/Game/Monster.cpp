@@ -79,6 +79,17 @@ void Monster::AITick()
 	}
 }
 
+bool Monster::TryActivate()
+{
+	bool expected = false;
+	return m_isActive.compare_exchange_strong(expected, true);
+}
+
+void Monster::Deactivate()
+{
+	m_isActive.store(false, std::memory_order_relaxed);
+}
+
 void Monster::RoamingMove()
 {
 	GameWorld& world = GameWorld::GetInstance();

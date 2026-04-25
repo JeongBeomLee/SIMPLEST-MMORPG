@@ -49,7 +49,6 @@ public:
 
 	// 타이머 이벤트 핸들러 (TimerManager -> IOCP worker -> HandleTimerEvent)
 	void HandleTimerEvent(TimerType type, uint32_t targetId);
-	void StartAITimer();
 
 private:
 	GameWorld() = default;
@@ -58,6 +57,8 @@ private:
 	// 내부 헬퍼
 	ObjectID AddPlayer(Session* session, const std::string& name);
 	void RemovePlayer(ObjectID id);
+	void ActivateNearbyMonsters(int16_t x, int16_t y);
+	bool HasObserverNearby(Monster* monster) const;
 
 private:
 	Map m_map;

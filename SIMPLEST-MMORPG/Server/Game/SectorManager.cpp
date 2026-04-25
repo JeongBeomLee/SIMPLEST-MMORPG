@@ -111,6 +111,17 @@ std::vector<ObjectID> SectorManager::GetNearbyObjects(int16_t x, int16_t y) cons
 	return result;
 }
 
+ObjectID SectorManager::GetOccupant(int16_t x, int16_t y) const
+{
+	if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT)
+	{
+		return INVALID_ID;
+	}
+
+	size_t idx = static_cast<size_t>(y) * MAP_WIDTH + x;
+	return m_tileToObject[idx].load();
+}
+
 bool SectorManager::TryClaim(int16_t x, int16_t y, ObjectID id)
 {
 	if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT)
