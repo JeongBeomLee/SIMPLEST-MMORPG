@@ -100,7 +100,21 @@ int main()
 				int16_t newX = me.x + DX[static_cast<int>(input.moveDir)];
 				int16_t newY = me.y + DY[static_cast<int>(input.moveDir)];
 
-				if (gameState.GetMap().IsWalkable(newX, newY))
+				bool canMove = gameState.GetMap().IsWalkable(newX, newY);
+				if (canMove)
+				{
+					auto objects = gameState.GetAllObjects();
+					for (const auto& obj : objects)
+					{
+						if (obj.x == newX && obj.y == newY)
+						{
+							canMove = false;
+							break;
+						}
+					}
+				}
+
+				if (canMove)
 				{
 					// 서버 전송
 					CS_Move mp;
@@ -113,7 +127,6 @@ int main()
 					gameState.MoveMyPlayer(newX, newY);
 				}
 			}
-
 			// TODO: input.attackPressed → CS_Attack 전송
 
 			renderer.RenderGame();

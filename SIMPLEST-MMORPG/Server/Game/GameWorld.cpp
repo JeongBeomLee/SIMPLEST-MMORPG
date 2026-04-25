@@ -44,6 +44,15 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 
 	// 2. 플레이어 생성 + 월드 등록
 	ObjectID id = AddPlayer(session, name);
+	if (id == INVALID_PLAYER_ID)
+	{
+		SC_LoginFail failPkt;
+		failPkt.header.size = sizeof(failPkt);
+		failPkt.header.type = static_cast<uint16_t>(PacketType::SC_LOGIN_FAIL);
+		failPkt.reason = 1;
+		session->SendPacket(&failPkt, sizeof(failPkt));
+		return;
+	}
 
 	// 3. SC_LoginOk 패킷 전송
 	auto player = GetPlayer(id);
@@ -73,18 +82,23 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 
 ObjectID GameWorld::AddPlayer(Session* session, const std::string& name)
 {
-	ObjectID id = session->GetId();   // 세션 ID = Player ID
+	ObjectID id = session->GetId();
 
 	auto player = std::make_shared<Player>(id, session, name);
-	Position spawnPos = { 0, 0 };  // 초기 스폰 위치
-	player->SetPos(spawnPos.x, spawnPos.y);
+
+	// 빈 타일 탐색
+	int16_t spawnX, spawnY;
+	if (!m_sectorManager.AddObject(id, 0, 0, m_map, spawnX, spawnY))
+	{
+		return INVALID_PLAYER_ID;
+	}
+
+	player->SetPos(spawnX, spawnY);
 
 	{
 		std::unique_lock lock(m_playersMutex);
 		m_players[id] = std::move(player);
 	}
-
-	m_sectorManager.AddObject(id, spawnPos.x, spawnPos.y);
 
 	return id;
 }
@@ -104,13 +118,13 @@ void GameWorld::ProcessMove(Session* session, const char* data)
 		return;
 	}
 
-	// 1. 쿨다운 체크
+	// 쿨다운 체크
 	if (!player->CanMove())
 	{
 		return;
 	}
 
-	// 2. 패킷 파싱
+	// 패킷 파싱
 	const CS_Move* pkt = reinterpret_cast<const CS_Move*>(data);
 	Direction dir = static_cast<Direction>(pkt->direction);
 	Position oldPos = player->GetPos();
@@ -120,20 +134,23 @@ void GameWorld::ProcessMove(Session* session, const char* data)
 	int16_t newX = oldX + DX[static_cast<int>(dir)];
 	int16_t newY = oldY + DY[static_cast<int>(dir)];
 
-	// 3. 이동 가능 체크
+	// 이동 가능 체크
 	if (!m_map.IsWalkable(newX, newY))
 	{
 		return;
 	}
 
-	// 4. 위치 업데이트
+	// 충돌 체크 + 섹터 이동
+	if (!m_sectorManager.TryMoveObject(id, oldX, oldY, newX, newY))
+	{
+		return;
+	}
+
+	// 위치 업데이트
 	player->SetPos(newX, newY);
 	player->OnMoved();
 
-	// 5. 섹터 이동
-	m_sectorManager.MoveObject(id, oldX, oldY, newX, newY);
-
-	// 6. 시야 diff 처리
+	// 시야 diff 처리
 	ViewProcessor::ProcessMoveView(player.get(), oldX, oldY);
 }
 
@@ -178,28 +195,28 @@ void GameWorld::SpawnMonsters()
 {
 	auto spawns = LuaManager::GetInstance().LoadMonsterSpawns("Scripts/monster_spawn.lua");
 
-	m_monsters.reserve(spawns.size());
+    m_monsters.reserve(spawns.size());
 
-	for (size_t i = 0; i < spawns.size(); ++i)
-	{
-		const auto& data = spawns[i];
-		ObjectID id = MONSTER_ID_OFFSET + static_cast<ObjectID>(i);
+    for (size_t i = 0; i < spawns.size(); ++i)
+    {
+        const auto& data = spawns[i];
+        ObjectID id = MONSTER_ID_OFFSET + static_cast<ObjectID>(i);
 
-		auto monster = std::make_unique<Monster>(
-			id,
-			data.name,
-			data.level,
-			data.maxHp,
-			data.behavior,
-			data.movement,
-			data.x, data.y
-		);
+        int16_t spawnX, spawnY;
+        if (!m_sectorManager.AddObject(id, data.x, data.y, m_map, spawnX, spawnY))
+        {
+            std::cout << "Failed to spawn " << data.name << " at (" << data.x << "," << data.y << ")" << std::endl;
+            continue;
+        }
 
-		// 섹터에 등록
-		m_sectorManager.AddObject(id, data.x, data.y);
+        auto monster = std::make_unique<Monster>(
+            id, data.name, data.level, data.maxHp,
+            data.behavior, data.movement, data.x, data.y
+        );
+		monster->SetPos(spawnX, spawnY);
 
-		m_monsters.push_back(std::move(monster));
-	}
+        m_monsters.push_back(std::move(monster));
+    }
 
 	std::cout << "Spawned " << m_monsters.size() << " monsters" << std::endl;
 }
@@ -230,9 +247,12 @@ void GameWorld::MoveMonster(Monster* monster, int16_t newX, int16_t newY)
 	Position oldPos = monster->GetPos();
 	int16_t oldX = oldPos.x, oldY = oldPos.y;
 
-	monster->SetPos(newX, newY);
-	m_sectorManager.MoveObject(monster->GetId(), oldX, oldY, newX, newY);
+	if (!m_sectorManager.TryMoveObject(monster->GetId(), oldX, oldY, newX, newY))
+	{
+		return;
+	}
 
+	monster->SetPos(newX, newY);
 	ViewProcessor::ProcessMoveView(monster, oldX, oldY);
 }
 

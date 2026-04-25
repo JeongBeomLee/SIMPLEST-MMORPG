@@ -15,6 +15,8 @@ class Session;
 class GameWorld
 {
 public:
+	static constexpr ObjectID INVALID_PLAYER_ID = UINT32_MAX;
+
 	static GameWorld& GetInstance();
 
 	GameWorld(const GameWorld&) = delete;
