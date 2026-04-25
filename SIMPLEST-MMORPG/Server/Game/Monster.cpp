@@ -39,6 +39,7 @@ void Monster::Respawn()
 	m_hp = m_maxHp;
 	m_pos = m_spawnPos; // 원래 스폰 위치로
 	m_targetPlayerId.reset();
+	m_isActive.store(false, std::memory_order_relaxed); // 활성화 상태 리셋
 }
 
 int32_t Monster::GetExpReward() const

@@ -488,6 +488,81 @@ void GameWorld::MoveMonster(Monster* monster, int16_t newX, int16_t newY)
 	ViewProcessor::ProcessMoveView(monster, oldX, oldY);
 }
 
+void GameWorld::RespawnMonster(ObjectID monsterId)
+{
+	Monster* monster = GetMonster(monsterId);
+	if (!monster)
+	{
+		return;
+	}
+
+	Position spawnPos = monster->GetSpawnPos();
+
+	int16_t outX, outY;
+	if (!m_sectorManager.AddObject(monsterId, spawnPos.x, spawnPos.y, m_map, outX, outY))
+	{
+		// 자리 못 찾음 -> 재시도
+		TimerManager::GetInstance().AddTimer(TimerType::MONSTER_RESPAWN, monsterId, MONSTER_RESPAWN_MS);
+		return;
+	}
+
+	// 상태 초기화 (HP 풀, target reset 등)
+	monster->Respawn();
+	monster->SetPos(outX, outY);
+
+	// 시야 내 플레이어에게 SC_AddObject
+	BroadcastAddMonster(monster);
+	if (HasObserverNearby(monster))
+	{
+		if (monster->TryActivate())
+		{
+			TimerManager::GetInstance().AddTimer(TimerType::MONSTER_AI, monsterId, MONSTER_AI_TICK_MS);
+		}
+	}
+
+	std::cout << "[Combat] Monster " << monsterId << " respawned at (" << outX << ", " << outY << ")" << std::endl;
+}
+
+void GameWorld::BroadcastAddMonster(Monster* monster)
+{
+	Position monsterPos = monster->GetPos();
+
+	SC_AddObject pkt;
+	pkt.header.size = sizeof(pkt);
+	pkt.header.type = static_cast<uint16_t>(PacketType::SC_ADD_OBJECT);
+	pkt.object_id = monster->GetId();
+	pkt.object_type = static_cast<uint8_t>(ObjectType::MONSTER);
+	pkt.x = monsterPos.x;
+	pkt.y = monsterPos.y;
+	pkt.level = monster->GetLevel();
+	pkt.hp = monster->GetHp();
+	pkt.max_hp = monster->GetMaxHp();
+	strncpy_s(pkt.name, sizeof(pkt.name), monster->GetName().c_str(), _TRUNCATE);
+
+	auto nearbyIds = m_sectorManager.GetNearbyObjects(monsterPos.x, monsterPos.y);
+	for (ObjectID pid : nearbyIds)
+	{
+		if (pid >= MONSTER_ID_OFFSET)
+		{
+			continue;
+		}
+
+		auto player = GetPlayer(pid);
+		if (!player)
+		{
+			continue;
+		}
+
+		Position playerPos = player->GetPos();
+		if (!ViewProcessor::IsInView(playerPos.x, playerPos.y, monsterPos.x, monsterPos.y))
+		{
+			continue;
+		}
+
+		player->GetSession()->SendPacket(&pkt, sizeof(pkt));
+	}
+}
+
 std::shared_ptr<Player> GameWorld::FindNearestPlayerInRange(int16_t x, int16_t y, int range)
 {
 	auto nearby = m_sectorManager.GetNearbyObjects(x, y);
@@ -566,7 +641,7 @@ void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 		break;
 	}
 	case TimerType::MONSTER_RESPAWN:
-		std::cout << "[Timer] MONSTER_RESPAWN " << targetId << std::endl;
+		RespawnMonster(targetId);
 		break;
 	case TimerType::DB_SAVE:
 		std::cout << "[Timer] DB_SAVE" << std::endl;
