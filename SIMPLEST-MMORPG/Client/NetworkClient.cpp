@@ -2,6 +2,7 @@
 #include "Protocol.h"
 #include "Logger.h"
 #include "GameState.h"
+#include "Renderer.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -199,6 +200,36 @@ void NetworkClient::OnPacket(const char* data, uint16_t size)
 		const SC_MoveObject* p = reinterpret_cast<const SC_MoveObject*>(data);
 		state.MoveObject(p->object_id, p->x, p->y);
 		LOG("MOVE_OBJECT: id=" << p->object_id << " pos=(" << p->x << "," << p->y << ")");
+		break;
+	}
+	case PacketType::SC_STAT_CHANGE:
+	{
+		const SC_StatChange* p = reinterpret_cast<const SC_StatChange*>(data);
+
+		// 내 ID 면 HUD 갱신, 다른 사람이면 GameState 의 RemoteObject 갱신
+		if (p->object_id == GameState::GetInstance().GetMyPlayer().id)
+		{
+			MyPlayer me = GameState::GetInstance().GetMyPlayer();
+			me.hp = p->hp;
+			me.maxHp = p->max_hp;
+			me.exp = p->exp;
+			me.level = p->level;
+			GameState::GetInstance().SetMyPlayer(me);
+		}
+		break;
+	}
+	case PacketType::SC_COMBAT_MESSAGE:
+	{
+		const SC_CombatMessage* p = reinterpret_cast<const SC_CombatMessage*>(data);
+		wchar_t buf[128];
+		swprintf_s(buf, L"[Combat] %u → %u : -%d HP", p->attacker_id, p->target_id, p->damage);
+		Renderer::GetInstance().PushLog(buf);
+		break;
+	}
+	case PacketType::SC_ATTACK_EFFECT:
+	{
+		const SC_AttackEffect* p = reinterpret_cast<const SC_AttackEffect*>(data);
+		GameState::GetInstance().AddAttackEffect(p->x, p->y);
 		break;
 	}
 	default:

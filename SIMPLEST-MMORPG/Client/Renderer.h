@@ -42,6 +42,9 @@ private:
 	void InitStars();
 	void UpdateAndDrawStars();
 
+	// 공격 이펙트
+	void DrawAttackEffect(int16_t centerX, int16_t centerY, int frame, int16_t myX, int16_t myY);
+
 private:
 	HANDLE m_hConsole{ INVALID_HANDLE_VALUE };
 

@@ -27,6 +27,12 @@ struct MyPlayer
 	std::string name;
 };
 
+struct AttackEffect
+{
+	int16_t x, y;
+	std::chrono::steady_clock::time_point startTime;
+};
+
 class GameState
 {
 public:
@@ -58,6 +64,9 @@ public:
 
 	bool IsLoggedIn() const { return m_loggedIn; }
 
+	void AddAttackEffect(int16_t x, int16_t y);
+	std::vector<AttackEffect> GetActiveEffects();
+
 private:
 	GameState() = default;
 	~GameState() = default;
@@ -68,6 +77,7 @@ private:
 	bool m_loggedIn{ false };
 
 	std::unordered_map<ObjectID, RemoteObject> m_objects;
+	std::vector<AttackEffect> m_effects;
 
 	mutable std::mutex m_mutex;
 };

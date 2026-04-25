@@ -261,6 +261,73 @@ void Renderer::UpdateAndDrawStars()
 	}
 }
 
+void Renderer::DrawAttackEffect(int16_t centerX, int16_t centerY, int frame, int16_t myX, int16_t myY)
+{
+	auto worldToTile = [&](int16_t wx, int16_t wy) -> std::pair<int, int> {
+		return { wx - myX + CENTER_TILE_X, wy - myY + CENTER_TILE_Y };
+		};
+
+	auto plot = [&](int16_t wx, int16_t wy, wchar_t ch, WORD color) {
+		if (wx == centerX && wy == centerY) return;
+
+		auto [tx, ty] = worldToTile(wx, wy);
+		if (tx < 0 || tx >= VIEWPORT_TILES) return;
+		if (ty < 0 || ty >= VIEWPORT_TILES) return;
+		DrawTile(tx, ty, ch, color);
+		};
+
+	WORD bright = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+	WORD dim = FOREGROUND_RED | FOREGROUND_INTENSITY;
+
+	switch (frame)
+	{
+	case 0:
+		plot(centerX, centerY - 1, L'.', bright);
+		plot(centerX - 1, centerY, L'.', bright);
+		plot(centerX + 1, centerY, L'.', bright);
+		plot(centerX, centerY + 1, L'.', bright);
+		break;
+
+	case 1:
+		plot(centerX, centerY - 1, L'*', bright);
+		plot(centerX - 1, centerY, L'*', bright);
+		plot(centerX + 1, centerY, L'*', bright);
+		plot(centerX, centerY + 1, L'*', bright);
+		break;
+
+	case 2:
+		plot(centerX, centerY - 1, L'|', bright);
+		plot(centerX - 1, centerY, L'-', bright);
+		plot(centerX + 1, centerY, L'-', bright);
+		plot(centerX, centerY + 1, L'|', bright);
+
+		plot(centerX, centerY - 2, L'^', bright);
+		plot(centerX - 2, centerY, L'<', bright);
+		plot(centerX + 2, centerY, L'>', bright);
+		plot(centerX, centerY + 2, L'v', bright);
+		break;
+
+	case 3:
+		plot(centerX, centerY - 1, L'.', dim);
+		plot(centerX - 1, centerY, L'.', dim);
+		plot(centerX + 1, centerY, L'.', dim);
+		plot(centerX, centerY + 1, L'.', dim);
+
+		plot(centerX, centerY - 2, L'*', dim);
+		plot(centerX - 2, centerY, L'*', dim);
+		plot(centerX + 2, centerY, L'*', dim);
+		plot(centerX, centerY + 2, L'*', dim);
+		break;
+
+	case 4:
+		plot(centerX, centerY - 2, L'.', dim);
+		plot(centerX - 2, centerY, L'.', dim);
+		plot(centerX + 2, centerY, L'.', dim);
+		plot(centerX, centerY + 2, L'.', dim);
+		break;
+	}
+}
+
 void Renderer::RenderMainMenu(const std::wstring& nameInput)
 {
 	Clear();
@@ -446,6 +513,26 @@ void Renderer::DrawViewport()
 	// 내 플레이어 (항상 중앙)
 	WORD myColor = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
 	DrawTile(CENTER_TILE_X, CENTER_TILE_Y, L'☻', myColor);
+
+	// 공격 이펙트
+	auto effects = GameState::GetInstance().GetActiveEffects();
+	auto now = std::chrono::steady_clock::now();
+
+	constexpr int FRAME_MS = 80; // 프레임 간격
+	constexpr int TOTAL_FRAMES = 5;  // 5단계
+	constexpr int LIFETIME_MS = FRAME_MS * TOTAL_FRAMES;
+
+	for (const auto& e : effects)
+	{
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - e.startTime).count();
+		if (elapsed >= LIFETIME_MS)
+		{
+			continue;
+		}
+
+		int frame = static_cast<int>(elapsed / FRAME_MS);
+		DrawAttackEffect(e.x, e.y, frame, me.x, me.y);
+	}
 }
 
 void Renderer::DrawHUD()

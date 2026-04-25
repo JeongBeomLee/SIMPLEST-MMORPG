@@ -1,4 +1,5 @@
 ﻿#include "GameState.h"
+#include <algorithm>
 
 GameState& GameState::GetInstance()
 {
@@ -81,4 +82,27 @@ std::vector<RemoteObject> GameState::GetAllObjects() const
 		result.push_back(obj);
 	}
 	return result;
+}
+
+void GameState::AddAttackEffect(int16_t x, int16_t y)
+{
+	std::lock_guard lock(m_mutex);
+	m_effects.push_back({ x, y, std::chrono::steady_clock::now() });
+}
+
+std::vector<AttackEffect> GameState::GetActiveEffects()
+{
+	std::lock_guard lock(m_mutex);
+	auto now = std::chrono::steady_clock::now();
+	constexpr auto duration = std::chrono::milliseconds(400);
+
+	// 500ms 지난 effect 제거
+	m_effects.erase(
+		std::remove_if(m_effects.begin(), m_effects.end(),
+			[&](const AttackEffect& e) {
+				return now - e.startTime > duration;
+			}),
+		m_effects.end());
+
+	return m_effects;
 }
