@@ -26,8 +26,8 @@ void PacketHandler::HandlePacket(Session* session, const char* data, uint16_t si
 		world.ProcessMove(session, data);
 		break;
 	case PacketType::CS_ATTACK:
-		std::cout << "[Session " << session->GetId() << "] ATTACK packet received" << std::endl;
-		// TODO: GameWorld::ProcessAttack(session, data);
+		if (size != sizeof(CS_Attack)) return;
+		world.ProcessAttack(session, data);
 		break;
 	case PacketType::CS_CHAT:
 		std::cout << "[Session " << session->GetId() << "] CHAT packet received" << std::endl;

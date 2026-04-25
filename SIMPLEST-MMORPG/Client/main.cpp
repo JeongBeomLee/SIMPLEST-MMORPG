@@ -127,7 +127,14 @@ int main()
 					gameState.MoveMyPlayer(newX, newY);
 				}
 			}
-			// TODO: input.attackPressed → CS_Attack 전송
+			
+			if (input.attackPressed)
+			{
+				CS_Attack atk;
+				atk.header.size = sizeof(atk);
+				atk.header.type = static_cast<uint16_t>(PacketType::CS_ATTACK);
+				client.SendPacket(&atk, sizeof(atk));
+			}
 
 			renderer.RenderGame();
 			break;

@@ -175,6 +175,112 @@ bool GameWorld::HasObserverNearby(Monster* monster) const
 	return false;
 }
 
+void GameWorld::OnMonsterDied(Monster* monster, const std::shared_ptr<Player>& killer)
+{
+	int32_t expReward = monster->GetExpReward();
+	killer->GainExp(expReward);
+
+	// 처치 보상
+	SC_StatChange statPkt;
+	statPkt.header.size = sizeof(statPkt);
+	statPkt.header.type = static_cast<uint16_t>(PacketType::SC_STAT_CHANGE);
+	statPkt.object_id = killer->GetId();
+	statPkt.hp = killer->GetHp();
+	statPkt.max_hp = killer->GetMaxHp();
+	statPkt.exp = killer->GetExp();
+	statPkt.level = killer->GetLevel();
+	killer->GetSession()->SendPacket(&statPkt, sizeof(statPkt));
+
+	// 시야 내 플레이어들에게 SC_RemoveObject
+	Position monsterPos = monster->GetPos();
+	auto nearbyIds = m_sectorManager.GetNearbyObjects(monsterPos.x, monsterPos.y);
+	for (ObjectID pid : nearbyIds)
+	{
+		if (pid >= MONSTER_ID_OFFSET)
+		{
+			continue;
+		}
+
+		auto player = GetPlayer(pid);
+		if (!player)
+		{
+			continue;
+		}
+
+		Position playerPos = player->GetPos();
+		if (!ViewProcessor::IsInView(playerPos.x, playerPos.y, monsterPos.x, monsterPos.y))
+		{
+			continue;
+		}
+
+		SC_RemoveObject rmPkt;
+		rmPkt.header.size = sizeof(rmPkt);
+		rmPkt.header.type = static_cast<uint16_t>(PacketType::SC_REMOVE_OBJECT);
+		rmPkt.object_id = monster->GetId();
+		player->GetSession()->SendPacket(&rmPkt, sizeof(rmPkt));
+	}
+
+	// 섹터/타일 점유 해제
+	m_sectorManager.RemoveObject(monster->GetId(), monsterPos.x, monsterPos.y);
+
+	// 30초 후 리스폰
+	TimerManager::GetInstance().AddTimer(TimerType::MONSTER_RESPAWN, monster->GetId(), MONSTER_RESPAWN_MS);
+
+	std::cout << "[Combat] Monster " << monster->GetId()
+		<< " died. Killer " << killer->GetId()
+		<< " gained " << expReward << " exp." << std::endl;
+}
+
+void GameWorld::SendCombatMessage(Player* receiver, ObjectID attackerId, ObjectID targetId, int32_t damage)
+{
+	if (!receiver)
+	{
+		return;
+	}
+
+	SC_CombatMessage pkt;
+	pkt.header.size = sizeof(pkt);
+	pkt.header.type = static_cast<uint16_t>(PacketType::SC_COMBAT_MESSAGE);
+	pkt.attacker_id = attackerId;
+	pkt.target_id = targetId;
+	pkt.damage = damage;
+
+	receiver->GetSession()->SendPacket(&pkt, sizeof(pkt));
+}
+
+void GameWorld::BroadcastAttackEffect(ObjectID attackerId, int16_t cx, int16_t cy)
+{
+	SC_AttackEffect pkt;
+	pkt.header.size = sizeof(pkt);
+	pkt.header.type = static_cast<uint16_t>(PacketType::SC_ATTACK_EFFECT);
+	pkt.attacker_id = attackerId;
+	pkt.x = cx;
+	pkt.y = cy;
+
+	auto nearbyIds = m_sectorManager.GetNearbyObjects(cx, cy);
+	for (ObjectID pid : nearbyIds)
+	{
+		if (pid >= MONSTER_ID_OFFSET)
+		{
+			continue;
+		}
+
+		auto player = GetPlayer(pid);
+		if (!player)
+		{
+			continue;
+		}
+
+		Position playerPos = player->GetPos();
+		if (!ViewProcessor::IsInView(playerPos.x, playerPos.y, cx, cy))
+		{
+			continue;
+		}
+
+		player->GetSession()->SendPacket(&pkt, sizeof(pkt));
+	}
+}
+
 void GameWorld::ProcessMove(Session* session, const char* data)
 {
 	ObjectID id = session->GetId();
@@ -239,6 +345,65 @@ void GameWorld::ProcessDisconnect(Session* session)
 
 	// 3. m_players 에서 제거
 	RemovePlayer(id);
+}
+
+void GameWorld::ProcessAttack(Session* session, const char* data)
+{
+	ObjectID id = session->GetId();
+	auto player = GetPlayer(id);
+	if (!player)
+	{
+		return;
+	}
+	if (!player->CanAttack())
+	{
+		return;
+	}
+
+	Position playerPos = player->GetPos();
+	int16_t px = playerPos.x, py = playerPos.y;
+	int32_t damage = player->GetLevel() * 10;
+
+	// 4방향 인접 검사
+	for (int d = 0; d < 4; ++d)
+	{
+		int16_t tx = px + DX[d];
+		int16_t ty = py + DY[d];
+
+		ObjectID targetId = m_sectorManager.GetOccupant(tx, ty);
+		if (targetId == SectorManager::INVALID_ID)
+		{
+			continue;
+		}
+		if (targetId < MONSTER_ID_OFFSET)
+		{
+			// PvP X
+			continue;
+		}
+
+		Monster* target = GetMonster(targetId);
+		if (!target)
+		{
+			continue;
+		}
+		if (target->IsDead())
+		{
+			continue;
+		}
+
+		target->TakeDamage(damage);
+
+		SendCombatMessage(player.get(), player->GetId(), target->GetId(), damage);
+
+		if (target->IsDead())
+		{
+			OnMonsterDied(target, player);
+		}
+	}
+
+	BroadcastAttackEffect(player->GetId(), px, py);
+
+	player->OnAttackPerformed();
 }
 
 std::shared_ptr<Player> GameWorld::GetPlayer(ObjectID id)

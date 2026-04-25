@@ -14,7 +14,7 @@ enum class PacketType : uint16_t
 	SC_MOVE_OBJECT,
 	SC_STAT_CHANGE,
 	SC_CHAT,
-	SC_COMBAT_MSG,
+	SC_COMBAT_MESSAGE,
 	SC_ATTACK_EFFECT
 };
 

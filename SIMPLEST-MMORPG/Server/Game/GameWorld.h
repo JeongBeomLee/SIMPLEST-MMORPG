@@ -30,6 +30,7 @@ public:
 	void ProcessLogin(Session* session, const char* data);
 	void ProcessMove(Session* session, const char* data);
 	void ProcessDisconnect(Session* session);
+	void ProcessAttack(Session* session, const char* data);
 
 	// 조회 API
 	Map& GetMap() { return m_map; }
@@ -57,8 +58,13 @@ private:
 	// 내부 헬퍼
 	ObjectID AddPlayer(Session* session, const std::string& name);
 	void RemovePlayer(ObjectID id);
+
 	void ActivateNearbyMonsters(int16_t x, int16_t y);
 	bool HasObserverNearby(Monster* monster) const;
+
+	void OnMonsterDied(Monster* monster, const std::shared_ptr<Player>& killer);
+	void SendCombatMessage(Player* receiver, ObjectID attackerId, ObjectID targetId, int32_t damage);
+	void BroadcastAttackEffect(ObjectID attackerId, int16_t cx, int16_t cy);
 
 private:
 	Map m_map;
