@@ -198,8 +198,15 @@ void NetworkClient::OnPacket(const char* data, uint16_t size)
 	case PacketType::SC_MOVE_OBJECT:
 	{
 		const SC_MoveObject* p = reinterpret_cast<const SC_MoveObject*>(data);
-		state.MoveObject(p->object_id, p->x, p->y);
-		LOG("MOVE_OBJECT: id=" << p->object_id << " pos=(" << p->x << "," << p->y << ")");
+		if (p->object_id == state.GetMyPlayer().id)
+		{
+			// 자기 자신 강제 동기화 (사망 후 리스폰 등)
+			state.MoveMyPlayer(p->x, p->y);
+		}
+		else
+		{
+			state.MoveObject(p->object_id, p->x, p->y);
+		}
 		break;
 	}
 	case PacketType::SC_STAT_CHANGE:

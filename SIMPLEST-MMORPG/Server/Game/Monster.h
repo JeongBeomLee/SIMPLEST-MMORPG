@@ -62,6 +62,9 @@ public:
 	void Deactivate();
 	bool IsActive() const { return m_isActive.load(std::memory_order_relaxed); }
 
+	bool CanAttack() const;
+	void OnAttackPerformed();
+
 private:
 	void RoamingMove();
 	void AgroPursue();
@@ -80,5 +83,6 @@ private:
 	std::atomic<bool> m_isActive{ false };
 	std::optional<ObjectID> m_targetPlayerId;
 	std::chrono::steady_clock::time_point m_deathTime{};
+	std::chrono::steady_clock::time_point m_lastAttackTime{};
 };
 

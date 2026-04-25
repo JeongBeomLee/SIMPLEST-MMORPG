@@ -49,6 +49,7 @@ public:
 	void RespawnMonster(ObjectID monsterId);
 	void BroadcastAddMonster(Monster* monster);
 	std::shared_ptr<Player> FindNearestPlayerInRange(int16_t x, int16_t y, int range);
+	void MonsterAttackPlayer(Monster* attacker, Player* victim);
 
 	// 타이머 이벤트 핸들러 (TimerManager -> IOCP worker -> HandleTimerEvent)
 	void HandleTimerEvent(TimerType type, uint32_t targetId);
@@ -60,6 +61,7 @@ private:
 	// 내부 헬퍼
 	ObjectID AddPlayer(Session* session, const std::string& name);
 	void RemovePlayer(ObjectID id);
+	void OnPlayerDied(Player* victim);
 
 	void ActivateNearbyMonsters(int16_t x, int16_t y);
 	bool HasObserverNearby(Monster* monster) const;

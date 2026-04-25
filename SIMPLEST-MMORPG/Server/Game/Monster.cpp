@@ -91,6 +91,20 @@ void Monster::Deactivate()
 	m_isActive.store(false, std::memory_order_relaxed);
 }
 
+bool Monster::CanAttack() const
+{
+	std::shared_lock lock(m_lock);
+	auto now = std::chrono::steady_clock::now();
+	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastAttackTime).count();
+	return diff >= ATTACK_COOLDOWN_MS;
+}
+
+void Monster::OnAttackPerformed()
+{
+	std::unique_lock lock(m_lock);
+	m_lastAttackTime = std::chrono::steady_clock::now();
+}
+
 void Monster::RoamingMove()
 {
 	GameWorld& world = GameWorld::GetInstance();
@@ -140,6 +154,18 @@ void Monster::AgroPursue()
 			// 시야 밖으로 벗어남
 			ClearTarget();
 			return;
+		}
+
+		// 공격 범위에 타겟이 있으면 공격
+		int distSum = std::abs(targetPos.x - curPos.x) + std::abs(targetPos.y - curPos.y);
+		if (distSum == 1)
+		{
+			if (CanAttack())
+			{
+				world.MonsterAttackPlayer(this, target.get());
+				OnAttackPerformed();
+			}
+			return; // 공격 후 이동 x
 		}
 
 		// A* 로 다음 칸

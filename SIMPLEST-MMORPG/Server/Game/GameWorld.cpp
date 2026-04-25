@@ -112,6 +112,57 @@ void GameWorld::RemovePlayer(ObjectID id)
 	m_players.erase(id);
 }
 
+void GameWorld::OnPlayerDied(Player* victim)
+{
+	Position oldPos = victim->GetPos();
+
+	// 시야 내 다른 플레이어에게 SC_RemoveObject
+	ViewProcessor::SendDisappear(victim);
+
+	// 섹터 제거
+	m_sectorManager.RemoveObject(victim->GetId(), oldPos.x, oldPos.y);
+
+	// Player 상태 초기화 (HP 풀, exp -50%, pos = (0, 0))
+	victim->Die();
+
+	// 새 위치 점유 (빈 타일 탐색)
+	int16_t respawnX, respawnY;
+	if (!m_sectorManager.AddObject(victim->GetId(), 0, 0, m_map, respawnX, respawnY))
+	{
+		std::cout << "Failed to respawn player " << victim->GetId() << std::endl;
+		return;
+	}
+	victim->SetPos(respawnX, respawnY);
+
+	// 변경된 stat 알림 (HP 회복 + exp 감소)
+	SC_StatChange statPkt;
+	statPkt.header.size = sizeof(statPkt);
+	statPkt.header.type = static_cast<uint16_t>(PacketType::SC_STAT_CHANGE);
+	statPkt.object_id = victim->GetId();
+	statPkt.hp = victim->GetHp();
+	statPkt.max_hp = victim->GetMaxHp();
+	statPkt.exp = victim->GetExp();
+	statPkt.level = victim->GetLevel();
+	victim->GetSession()->SendPacket(&statPkt, sizeof(statPkt));
+
+	// 새 위치 알림 (본인에게 SC_MoveObject 형태로)
+	SC_MoveObject movePkt;
+	movePkt.header.size = sizeof(movePkt);
+	movePkt.header.type = static_cast<uint16_t>(PacketType::SC_MOVE_OBJECT);
+	movePkt.object_id = victim->GetId();
+	movePkt.x = respawnX;
+	movePkt.y = respawnY;
+	victim->GetSession()->SendPacket(&movePkt, sizeof(movePkt));
+
+	// 새 위치에서 시야 갱신
+	ViewProcessor::SendFullView(victim);
+
+	// 새 위치 주변 몬스터 활성화
+	ActivateNearbyMonsters(respawnX, respawnY);
+
+	std::cout << "[Combat] Player " << victim->GetId() << " died and respawned at (" << respawnX << ", " << respawnY << ")" << std::endl;
+}
+
 void GameWorld::ActivateNearbyMonsters(int16_t x, int16_t y)
 {
 	auto nearbyIds = m_sectorManager.GetNearbyObjects(x, y);
@@ -606,6 +657,43 @@ std::shared_ptr<Player> GameWorld::FindNearestPlayerInRange(int16_t x, int16_t y
 	}
 
 	return nearest;
+}
+
+void GameWorld::MonsterAttackPlayer(Monster* attacker, Player* victim)
+{
+	if (!attacker || !victim)
+	{
+		return;
+	}
+	if (victim->IsDead())
+	{
+		return;
+	}
+
+	int32_t damage = attacker->GetLevel() * 5;
+	victim->TakeDamage(damage);
+
+	SendCombatMessage(victim, attacker->GetId(), victim->GetId(), damage);
+
+	Position attackerPos = attacker->GetPos();
+	BroadcastAttackEffect(attacker->GetId(), attackerPos.x, attackerPos.y);
+
+	// HP 갱신
+	SC_StatChange statPkt;
+	statPkt.header.size = sizeof(statPkt);
+	statPkt.header.type = static_cast<uint16_t>(PacketType::SC_STAT_CHANGE);
+	statPkt.object_id = victim->GetId();
+	statPkt.hp = victim->GetHp();
+	statPkt.max_hp = victim->GetMaxHp();
+	statPkt.exp = victim->GetExp();
+	statPkt.level = victim->GetLevel();
+	victim->GetSession()->SendPacket(&statPkt, sizeof(statPkt));
+
+	// 4. 사망 처리
+	if (victim->IsDead())
+	{
+		OnPlayerDied(victim);
+	}
 }
 
 void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
