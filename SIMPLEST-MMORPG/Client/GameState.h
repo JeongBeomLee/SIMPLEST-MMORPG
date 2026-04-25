@@ -61,6 +61,7 @@ public:
 	// 조회 (Renderer 가 const 로 접근)
 	MyPlayer GetMyPlayer() const;
 	std::vector<RemoteObject> GetAllObjects() const;
+	std::string GetObjectName(ObjectID id) const;
 
 	bool IsLoggedIn() const { return m_loggedIn; }
 

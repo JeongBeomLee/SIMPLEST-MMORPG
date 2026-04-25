@@ -19,7 +19,7 @@ public:
 	void RenderGame();
 
 	// 로그/채팅 창에 한 줄 추가 (Thread-Safe)
-	void PushLog(const std::wstring& line);
+	void PushLog(const std::wstring& line, WORD color = (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY));
 
 private:
 	Renderer() = default;
@@ -52,8 +52,13 @@ private:
 	static constexpr int SCREEN_H = 30;
 	CHAR_INFO m_buffer[SCREEN_W * SCREEN_H]{};
 
+	struct LogLine
+	{
+		std::wstring text;
+		WORD color;
+	};
 	static constexpr size_t MAX_LOG_LINES = 15;
-	std::deque<std::wstring> m_logLines;
+	std::deque<LogLine> m_logLines;
 	mutable std::mutex m_logMutex;
 
 	// 별 비 효과

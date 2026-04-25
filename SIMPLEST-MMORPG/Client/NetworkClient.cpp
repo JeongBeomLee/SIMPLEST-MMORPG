@@ -221,9 +221,19 @@ void NetworkClient::OnPacket(const char* data, uint16_t size)
 	case PacketType::SC_COMBAT_MESSAGE:
 	{
 		const SC_CombatMessage* p = reinterpret_cast<const SC_CombatMessage*>(data);
+
+		GameState& gameState = GameState::GetInstance();
+		std::string attackerName = gameState.GetObjectName(p->attacker_id);
+		std::string targetName = gameState.GetObjectName(p->target_id);
+
+		std::wstring atkW = LogInternal::AsciiToWString(attackerName);
+		std::wstring tgtW = LogInternal::AsciiToWString(targetName);
+
 		wchar_t buf[128];
-		swprintf_s(buf, L"[Combat] %u → %u : -%d HP", p->attacker_id, p->target_id, p->damage);
-		Renderer::GetInstance().PushLog(buf);
+		swprintf_s(buf, L"[Combat] %ls -> %ls : -%d HP", atkW.c_str(), tgtW.c_str(), p->damage);
+
+		WORD combatColor = FOREGROUND_RED | FOREGROUND_GREEN;
+		Renderer::GetInstance().PushLog(buf, combatColor);
 		break;
 	}
 	case PacketType::SC_ATTACK_EFFECT:

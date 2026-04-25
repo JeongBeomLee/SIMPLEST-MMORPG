@@ -18,6 +18,14 @@ namespace LogInternal
 		static std::mutex mtx;
 		return mtx;
 	}
+
+	inline std::wstring AsciiToWString(const std::string& s)
+	{
+		std::wstring result;
+		result.reserve(s.size());
+		for (char c : s) result.push_back(static_cast<wchar_t>(c));
+		return result;
+	}
 }
 
 #ifdef _DEBUG

@@ -424,10 +424,10 @@ void Renderer::RenderGame()
 	Flush();
 }
 
-void Renderer::PushLog(const std::wstring& line) 
+void Renderer::PushLog(const std::wstring& line, WORD color)
 {
 	std::lock_guard lock(m_logMutex);
-	m_logLines.push_back(line);
+	m_logLines.push_back({ line, color });
 	while (m_logLines.size() > MAX_LOG_LINES)
 	{
 		m_logLines.pop_front();
@@ -568,7 +568,7 @@ void Renderer::DrawHUD()
 	DrawString(HUD_X + 10, HUD_Y + 5, buf, FOREGROUND_RED | FOREGROUND_INTENSITY);
 
 	// Line 3: Exp
-	swprintf_s(buf, L"%d", me.exp);
+	swprintf_s(buf, L"%d / %d", me.exp, 100 * (1 << (me.level - 1)));
 	DrawString(HUD_X + 2, HUD_Y + 7, L"Exp:", titleColor);
 	DrawString(HUD_X + 10, HUD_Y + 7, buf, valueColor);
 
@@ -593,7 +593,7 @@ void Renderer::DrawLogBox()
 	int startRow = LOG_Y + 1;
 
 	int i = 0;
-	for (const auto& line : m_logLines)
+	for (const auto& entry : m_logLines)
 	{
 		if (i >= maxContentH)
 		{
@@ -601,9 +601,9 @@ void Renderer::DrawLogBox()
 		}
 
 		int maxLen = LOG_W - 2;
-		std::wstring truncated = line.substr(0, maxLen);
+		std::wstring truncated = entry.text.substr(0, maxLen);
 
-		DrawString(LOG_X + 1, startRow + i, truncated.c_str(), FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+		DrawString(LOG_X + 1, startRow + i, truncated.c_str(), entry.color);
 		++i;
 	}
 }

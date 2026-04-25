@@ -84,6 +84,24 @@ std::vector<RemoteObject> GameState::GetAllObjects() const
 	return result;
 }
 
+std::string GameState::GetObjectName(ObjectID id) const
+{
+	std::lock_guard lock(m_mutex);
+
+	if (id == m_me.id)
+	{
+		return m_me.name;
+	}
+
+	auto it = m_objects.find(id);
+	if (it != m_objects.end())
+	{
+		return it->second.name;
+	}
+
+	return "Unknown";
+}
+
 void GameState::AddAttackEffect(int16_t x, int16_t y)
 {
 	std::lock_guard lock(m_mutex);
