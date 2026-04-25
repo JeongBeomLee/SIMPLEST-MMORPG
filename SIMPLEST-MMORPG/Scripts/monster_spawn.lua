@@ -18,44 +18,53 @@ end
 -- ============================================
 
 monster_spawns = {
-    -- 슬라임: 평화 + 배회
+    -- Pawn: 평화로운 잡몹, 초보자 영역
     {
-        name = "Slime",
+        name = "Pawn",
         level = 1,
         hp = 50,
         behavior = "peace",
         movement = "roaming",
-        spawns = {
-            { 30, 30 },
-            { 35, 32 },
-            { 40, 28 },
-            { 25, 35 },
-            { 45, 40 },
-        }
+        spawns = generate_grid_spawns(30, 30, 5, 5, 8),   -- 25 마리
     },
 
-    -- 고블린: 공격 + 배회
+    -- Knight: 추격형, 중간 영역
     {
-        name = "Goblin",
+        name = "Knight",
         level = 3,
         hp = 120,
         behavior = "agro",
         movement = "roaming",
-        spawns = generate_grid_spawns(100, 100, 5, 5, 8),
+        spawns = generate_grid_spawns(100, 100, 5, 5, 10), -- 25 마리
     },
 
-    -- 보초 오크: 공격 + 고정
+    -- Rook: 보초병, 고정
     {
-        name = "Guard Orc",
+        name = "Rook",
         level = 5,
         hp = 250,
         behavior = "agro",
         movement = "fixed",
-        spawns = {
-            { 200, 200 },
-            { 205, 200 },
-            { 200, 205 },
-            { 205, 205 },
-        }
+        spawns = generate_grid_spawns(200, 200, 4, 4, 5),  -- 16 마리
+    },
+
+    -- Bishop: 강력 추격, 깊은 지역
+    {
+        name = "Bishop",
+        level = 8,
+        hp = 500,
+        behavior = "agro",
+        movement = "roaming",
+        spawns = { {500, 500}, {520, 500}, {510, 520} },   -- 3 마리
+    },
+
+    -- Queen: 보스 (몇 마리만)
+    {
+        name = "Queen",
+        level = 10,
+        hp = 1000,
+        behavior = "agro",
+        movement = "fixed",
+        spawns = { {800, 800}, {1500, 1500} },             -- 2 마리
     },
 }

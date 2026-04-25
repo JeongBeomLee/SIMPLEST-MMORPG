@@ -1,6 +1,9 @@
 ﻿#include "Monster.h"
 #include "GameWorld.h"
+#include "Pathfinder.h"
+#include "Constants.h"
 #include <random>
+#include <algorithm>
 
 Monster::Monster(ObjectID id,
 	const std::string& name,
@@ -72,8 +75,7 @@ void Monster::AITick()
 	}
 	else if (behavior == MonsterBehavior::AGRO)
 	{
-		// AgroPursue 대신 RoamingMove 로 임시 대체
-		RoamingMove();
+		AgroPursue();
 	}
 }
 
@@ -90,7 +92,6 @@ void Monster::RoamingMove()
 	int16_t newX = curPos.x + DX[dir];
 	int16_t newY = curPos.y + DY[dir];
 
-	Position spawnPos = m_spawnPos;
 	if (!IsInRoamingRange(newX, newY))
 	{
 		return;
@@ -102,4 +103,66 @@ void Monster::RoamingMove()
 	}
 
 	world.MoveMonster(this, newX, newY);
+}
+
+void Monster::AgroPursue()
+{
+	GameWorld& world = GameWorld::GetInstance();
+	Position curPos = GetPos();
+
+	// 현재 타겟 체크
+	auto targetIdOpt = GetTargetPlayerId();
+	if (targetIdOpt.has_value())
+	{
+		auto target = world.GetPlayer(*targetIdOpt);
+		if (!target || target->IsDead())
+		{
+			ClearTarget();
+			return;
+		}
+
+		Position targetPos = target->GetPos();
+		int distMax = std::max(std::abs(targetPos.x - curPos.x), std::abs(targetPos.y - curPos.y));
+		if (distMax > HALF_AGRO)
+		{
+			// 시야 밖으로 벗어남
+			ClearTarget();
+			return;
+		}
+
+		// A* 로 다음 칸
+		auto path = Pathfinder::FindPath(curPos.x, curPos.y, targetPos.x, targetPos.y);
+		if (path.empty())
+		{
+			return;
+		}
+
+		Position next = path.front();
+
+		// Roaming 범위 벗어나면 이동 포기 (몬스터가 맵을 누비지 않게)
+		if (!IsInRoamingRange(next.x, next.y))
+		{
+			return;
+		}
+
+		if (!world.GetMap().IsWalkable(next.x, next.y))
+		{
+			return;
+		}
+
+		world.MoveMonster(this, next.x, next.y);
+		return;
+	}
+
+	// 타겟 없으면 AGRO_RANGE 안에서 탐색
+	auto target = world.FindNearestPlayerInRange(curPos.x, curPos.y, HALF_AGRO);
+	if (target)
+	{
+		SetTargetPlayerId(target->GetId());
+	}
+	else
+	{
+		// 타겟 못찾으면 다시 이동
+		RoamingMove();
+	}
 }

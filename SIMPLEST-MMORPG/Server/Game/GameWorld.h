@@ -43,6 +43,7 @@ public:
 	void SpawnMonsters();
 	Monster* GetMonster(ObjectID id);
 	void MoveMonster(Monster* monster, int16_t newX, int16_t newY);
+	std::shared_ptr<Player> FindNearestPlayerInRange(int16_t x, int16_t y, int range);
 
 	// 타이머 이벤트 핸들러 (TimerManager -> IOCP worker -> HandleTimerEvent)
 	void HandleTimerEvent(TimerType type, uint32_t targetId);

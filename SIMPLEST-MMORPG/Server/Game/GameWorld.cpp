@@ -6,6 +6,7 @@
 #include "Types.h"
 #include "ViewProcessor.h"
 #include <iostream>
+#include <algorithm>
 
 GameWorld& GameWorld::GetInstance()
 {
@@ -233,6 +234,51 @@ void GameWorld::MoveMonster(Monster* monster, int16_t newX, int16_t newY)
 	m_sectorManager.MoveObject(monster->GetId(), oldX, oldY, newX, newY);
 
 	ViewProcessor::ProcessMoveView(monster, oldX, oldY);
+}
+
+std::shared_ptr<Player> GameWorld::FindNearestPlayerInRange(int16_t x, int16_t y, int range)
+{
+	auto nearby = m_sectorManager.GetNearbyObjects(x, y);
+
+	std::shared_ptr<Player> nearest = nullptr;
+	int minDistSq = INT_MAX;
+
+	for (ObjectID id : nearby)
+	{
+		if (id >= MONSTER_ID_OFFSET)
+		{
+			continue;
+		}
+
+		auto player = GetPlayer(id);
+		if (!player)
+		{
+			continue;
+		}
+		if (player->IsDead())
+		{
+			continue;
+		}
+
+		Position playerPos = player->GetPos();
+		int dx = playerPos.x - x;
+		int dy = playerPos.y - y;
+
+		int distMax = std::max(std::abs(dx), std::abs(dy));
+		if (distMax > range)
+		{
+			continue;
+		}
+
+		int distSq = dx * dx + dy * dy;
+		if (distSq < minDistSq)
+		{
+			minDistSq = distSq;
+			nearest = player;
+		}
+	}
+
+	return nearest;
 }
 
 void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)

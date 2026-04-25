@@ -19,7 +19,7 @@ constexpr int VIEW_RANGE = 21;
 constexpr int HALF_VIEW = VIEW_RANGE / 2;
 
 // AI 시야 관련
-constexpr int AGRO_RANGE = 11;
+constexpr int AGRO_RANGE = 15;
 constexpr int HALF_AGRO = AGRO_RANGE / 2;
 constexpr int ROAMING_RANGE = 20;
 
@@ -29,7 +29,7 @@ constexpr int MAX_MONSTERS = 200000;
 constexpr uint32_t MONSTER_ID_OFFSET = 1000000;
 
 // 타이머 관련
-constexpr int MOVE_COOLDOWN_MS = 500;
+constexpr int MOVE_COOLDOWN_MS = 50;
 constexpr int ATTACK_COOLDOWN_MS = 1000;
 constexpr int HP_REGEN_INTERVAL_MS = 5000;
 constexpr int MONSTER_RESPAWN_MS = 30000;

@@ -81,6 +81,25 @@ namespace
 		FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY,
 	};
 	constexpr int NUM_COLORS = 6;
+
+	// 몬스터 이름 → (모양, 기본 색상) 매핑
+	struct MonsterVisual
+	{
+		wchar_t shape;
+		WORD baseColor;
+	};
+
+	MonsterVisual GetMonsterVisual(const std::string& name)
+	{
+		if (name == "Pawn")    return { L'♟', FOREGROUND_GREEN | FOREGROUND_INTENSITY };
+		if (name == "Knight")  return { L'♞', FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY };
+		if (name == "Rook")    return { L'♜', FOREGROUND_RED | FOREGROUND_GREEN };
+		if (name == "Bishop")  return { L'♝', FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY };
+		if (name == "Queen")   return { L'♛', FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE };
+
+		// 알 수 없는 이름 → 기본 M 빨강 (fallback)
+		return { L'M', FOREGROUND_RED | FOREGROUND_INTENSITY };
+	}
 }
 
 Renderer& Renderer::GetInstance()
@@ -416,8 +435,9 @@ void Renderer::DrawViewport()
 		}
 		else
 		{
-			ch = L'M';
-			color = FOREGROUND_RED | FOREGROUND_INTENSITY;
+			MonsterVisual mv = GetMonsterVisual(obj.name);
+			ch = mv.shape;
+			color = mv.baseColor;
 		}
 
 		DrawTile(tileX, tileY, ch, color);
