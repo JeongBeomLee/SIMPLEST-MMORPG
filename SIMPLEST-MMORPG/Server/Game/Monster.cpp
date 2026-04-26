@@ -156,20 +156,72 @@ void Monster::AgroPursue()
 			return;
 		}
 
-		// 공격 범위에 타겟이 있으면 공격
-		int distSum = std::abs(targetPos.x - curPos.x) + std::abs(targetPos.y - curPos.y);
-		if (distSum == 1)
+		// 4방향 인접에 플레이어가 있으면 전부 공격
+		std::vector<std::shared_ptr<Player>> adjacentVictims;
+		adjacentVictims.reserve(4);
+
+		for (int i = 0; i < 4; ++i)
+		{
+			int16_t ax = curPos.x + DX[i];
+			int16_t ay = curPos.y + DY[i];
+
+			ObjectID occupant = world.GetSectorManager().GetOccupant(ax, ay);
+			if (occupant == SectorManager::INVALID_ID || occupant >= MONSTER_ID_OFFSET)
+			{
+				continue;
+			}
+
+			auto p = world.GetPlayer(occupant);
+			if (p && !p->IsDead())
+			{
+				adjacentVictims.push_back(std::move(p));
+			}
+		}
+
+		if (!adjacentVictims.empty())
 		{
 			if (CanAttack())
 			{
-				world.MonsterAttackPlayer(this, target.get());
+				for (auto& victim : adjacentVictims)
+				{
+					world.MonsterAttackPlayer(this, victim.get());
+				}
+				world.BroadcastAttackEffect(GetId(), curPos.x, curPos.y);
 				OnAttackPerformed();
 			}
-			return; // 공격 후 이동 x
+			return;  // 이동 x
+		}
+
+		// 플레이어 4방향 surround 타일 중 비점유 + 가장 가까운 타일 선택
+		Position goalPos = targetPos;
+		int bestDist = INT_MAX;
+
+		for (int i = 0; i < 4; ++i)
+		{
+			int16_t cx = targetPos.x + DX[i];
+			int16_t cy = targetPos.y + DY[i];
+
+			if (!world.GetMap().IsWalkable(cx, cy))
+			{
+				continue;
+			}
+
+			ObjectID occupant = world.GetSectorManager().GetOccupant(cx, cy);
+			if (occupant != SectorManager::INVALID_ID && occupant != GetId())
+			{
+				continue;
+			}
+
+			int dist = std::abs(cx - curPos.x) + std::abs(cy - curPos.y);
+			if (dist < bestDist)
+			{
+				bestDist = dist;
+				goalPos = { cx, cy };
+			}
 		}
 
 		// A* 로 다음 칸
-		auto path = Pathfinder::FindPath(curPos.x, curPos.y, targetPos.x, targetPos.y);
+		auto path = Pathfinder::FindPath(curPos.x, curPos.y, goalPos.x, goalPos.y);
 		if (path.empty())
 		{
 			return;

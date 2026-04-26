@@ -687,9 +687,6 @@ void GameWorld::MonsterAttackPlayer(Monster* attacker, Player* victim)
 
 	SendCombatMessage(victim, attacker->GetId(), victim->GetId(), damage);
 
-	Position attackerPos = attacker->GetPos();
-	BroadcastAttackEffect(attacker->GetId(), attackerPos.x, attackerPos.y);
-
 	// HP 갱신
 	SC_StatChange statPkt;
 	statPkt.header.size = sizeof(statPkt);

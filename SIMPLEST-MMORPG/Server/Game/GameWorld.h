@@ -50,6 +50,7 @@ public:
 	void BroadcastAddMonster(Monster* monster);
 	std::shared_ptr<Player> FindNearestPlayerInRange(int16_t x, int16_t y, int range);
 	void MonsterAttackPlayer(Monster* attacker, Player* victim);
+	void BroadcastAttackEffect(ObjectID attackerId, int16_t cx, int16_t cy);
 
 	// 타이머 이벤트 핸들러 (TimerManager -> IOCP worker -> HandleTimerEvent)
 	void HandleTimerEvent(TimerType type, uint32_t targetId);
@@ -69,7 +70,6 @@ private:
 
 	void OnMonsterDied(Monster* monster, const std::shared_ptr<Player>& killer);
 	void SendCombatMessage(Player* receiver, ObjectID attackerId, ObjectID targetId, int32_t damage);
-	void BroadcastAttackEffect(ObjectID attackerId, int16_t cx, int16_t cy);
 
 private:
 	Map m_map;
