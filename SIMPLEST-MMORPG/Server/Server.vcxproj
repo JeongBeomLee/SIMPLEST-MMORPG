@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClCompile Include="..\Common\Map.cpp" />
     <ClCompile Include="DB\DBConnection.cpp" />
+    <ClCompile Include="DB\DBManager.cpp" />
     <ClCompile Include="Game\GameWorld.cpp" />
     <ClCompile Include="Game\Monster.cpp" />
     <ClCompile Include="Game\Pathfinder.cpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="..\Common\Protocol.h" />
     <ClInclude Include="..\Common\Types.h" />
     <ClInclude Include="DB\DBConnection.h" />
+    <ClInclude Include="DB\DBManager.h" />
     <ClInclude Include="Game\GameObject.h" />
     <ClInclude Include="Game\GameWorld.h" />
     <ClInclude Include="Game\Monster.h" />

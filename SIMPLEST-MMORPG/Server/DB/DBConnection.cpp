@@ -290,14 +290,29 @@ bool DBConnection::SavePlayer(const PlayerRow& row)
 		return false;
 	}
 
-	// 파라미터 바인딩
-	SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SBIGINT, SQL_BIGINT, 0, 0, (SQLPOINTER)&row.id, 0, nullptr);
-	SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SSHORT, SQL_SMALLINT, 0, 0, (SQLPOINTER)&row.level, 0, nullptr);
-	SQLBindParameter(stmt, 3, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&row.exp, 0, nullptr);
-	SQLBindParameter(stmt, 4, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&row.hp, 0, nullptr);
-	SQLBindParameter(stmt, 5, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, (SQLPOINTER)&row.maxHp, 0, nullptr);
-	SQLBindParameter(stmt, 6, SQL_PARAM_INPUT, SQL_C_SSHORT, SQL_SMALLINT, 0, 0, (SQLPOINTER)&row.x, 0, nullptr);
-	SQLBindParameter(stmt, 7, SQL_PARAM_INPUT, SQL_C_SSHORT, SQL_SMALLINT, 0, 0, (SQLPOINTER)&row.y, 0, nullptr);
+	// 파라미터 바인딩 + 에러 체크
+	auto bindOrFail = [&](SQLUSMALLINT idx, SQLSMALLINT cType, SQLSMALLINT sqlType, SQLPOINTER ptr) -> bool
+		{
+			SQLRETURN r = SQLBindParameter(stmt, idx, SQL_PARAM_INPUT, cType, sqlType, 0, 0, ptr, 0, nullptr);
+			if (!SQL_SUCCEEDED(r))
+			{
+				PrintDiagnostic(SQL_HANDLE_STMT, stmt, "BindParam(SavePlayer)");
+				return false;
+			}
+			return true;
+		};
+
+	if (!bindOrFail(1, SQL_C_SBIGINT, SQL_BIGINT, (SQLPOINTER)&row.id) ||
+		!bindOrFail(2, SQL_C_SSHORT, SQL_SMALLINT, (SQLPOINTER)&row.level) ||
+		!bindOrFail(3, SQL_C_SLONG, SQL_INTEGER, (SQLPOINTER)&row.exp) ||
+		!bindOrFail(4, SQL_C_SLONG, SQL_INTEGER, (SQLPOINTER)&row.hp) ||
+		!bindOrFail(5, SQL_C_SLONG, SQL_INTEGER, (SQLPOINTER)&row.maxHp) ||
+		!bindOrFail(6, SQL_C_SSHORT, SQL_SMALLINT, (SQLPOINTER)&row.x) ||
+		!bindOrFail(7, SQL_C_SSHORT, SQL_SMALLINT, (SQLPOINTER)&row.y))
+	{
+		SQLFreeHandle(SQL_HANDLE_STMT, stmt);
+		return false;
+	}
 
 	ret = SQLExecute(stmt);
 	if (!SQL_SUCCEEDED(ret))

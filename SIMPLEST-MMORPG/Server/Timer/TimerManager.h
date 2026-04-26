@@ -45,7 +45,7 @@ private:
 	TimerManager() = default;
 	~TimerManager() = default;
 
-	void ThreadLoop();
+	void WorkerThread();
 	void PostToIOCP(const TimerEvent& ev);
 
 private:

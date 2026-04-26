@@ -11,7 +11,7 @@ void TimerManager::Start(HANDLE hIOCP)
 {
 	m_hIOCP = hIOCP;
 	m_running = true;
-	m_thread = std::thread(&TimerManager::ThreadLoop, this);
+	m_thread = std::thread(&TimerManager::WorkerThread, this);
 }
 
 void TimerManager::Stop()
@@ -42,7 +42,7 @@ void TimerManager::AddTimer(TimerType type, uint32_t targetId, int delayMs)
 	m_cv.notify_one(); // 타이머 스레드 깨우기
 }
 
-void TimerManager::ThreadLoop()
+void TimerManager::WorkerThread()
 {
 	while (m_running)
 	{

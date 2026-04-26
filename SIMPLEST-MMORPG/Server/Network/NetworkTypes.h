@@ -1,12 +1,14 @@
 ﻿#pragma once
 #include <WinSock2.h>
+#include <functional>
 
 enum class IOType 
 { 
 	ACCEPT, 
 	RECV, 
 	SEND,
-	TIMER
+	TIMER,
+	DB_COMPLETE,
 };
 
 // 타이머 이벤트 종류
@@ -32,4 +34,11 @@ struct TimerOverlapped
 	OverlappedEx base;
 	TimerType type;
 	uint32_t targetId;
+};
+
+// DB 완료 콜백 (DB 워커 -> IOCP 워커로 전달)
+struct DBCompletionOverlapped
+{
+	OverlappedEx base;
+	std::function<void()> callback;
 };

@@ -73,6 +73,9 @@
     <ClCompile Include="DB\DBConnection.cpp">
       <Filter>DB</Filter>
     </ClCompile>
+    <ClCompile Include="DB\DBManager.cpp">
+      <Filter>DB</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Network\RingBuffer.h">
@@ -136,6 +139,9 @@
       <Filter>Timer</Filter>
     </ClInclude>
     <ClInclude Include="DB\DBConnection.h">
+      <Filter>DB</Filter>
+    </ClInclude>
+    <ClInclude Include="DB\DBManager.h">
       <Filter>DB</Filter>
     </ClInclude>
   </ItemGroup>

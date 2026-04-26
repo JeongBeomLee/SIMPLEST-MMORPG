@@ -1,6 +1,7 @@
 ﻿#include "IOCPServer.h"
 #include "../Game/GameWorld.h"
 #include "../Timer/TimerManager.h"
+#include "../DB/DBManager.h"
 #include <iostream>
 #include <WS2tcpip.h>
 
@@ -126,7 +127,10 @@ void IOCPServer::WorkerThread()
 		OverlappedEx* ovEx = reinterpret_cast<OverlappedEx*>(overlapped);
 
 		// GQCS 실패 또는 연결 끊김
-		if (ret == FALSE || (bytes == 0 && ovEx->ioType != IOType::ACCEPT && ovEx->ioType != IOType::TIMER))
+		if (ret == FALSE || (bytes == 0 
+			&& ovEx->ioType != IOType::ACCEPT 
+			&& ovEx->ioType != IOType::TIMER
+			&& ovEx->ioType != IOType::DB_COMPLETE))
 		{
 			Session* session = m_sessions[key];
 			if (session != nullptr)
@@ -152,6 +156,22 @@ void IOCPServer::WorkerThread()
 			TimerOverlapped* tov = reinterpret_cast<TimerOverlapped*>(ovEx);
 			GameWorld::GetInstance().HandleTimerEvent(tov->type, tov->targetId);
 			TimerManager::GetInstance().ReleaseTimerOverlapped(tov);
+			break;
+		}
+		case IOType::DB_COMPLETE:
+		{
+			std::unique_ptr<DBCompletionOverlapped> dbov(reinterpret_cast<DBCompletionOverlapped*>(ovEx));
+			if (dbov->callback)
+			{
+				try 
+				{
+					dbov->callback();
+				}
+				catch (const std::exception& e)
+				{
+					std::cerr << "[IOCP] DB callback threw: " << e.what() << std::endl;
+				}
+			}
 			break;
 		}
 		}
@@ -298,6 +318,7 @@ void IOCPServer::ShutDown()
 		return;
 	}
 
+	DBManager::GetInstance().Shutdown();
 	TimerManager::GetInstance().Stop();
 
 	m_running = false;
