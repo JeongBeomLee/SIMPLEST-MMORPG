@@ -20,6 +20,9 @@
     <Filter Include="Timer">
       <UniqueIdentifier>{5f2e5171-e89b-465a-b92b-15d896e18987}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DB">
+      <UniqueIdentifier>{39971ecb-c244-4e5f-82c2-c308e9ed0ea6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Network\RingBuffer.cpp">
@@ -66,6 +69,9 @@
     </ClCompile>
     <ClCompile Include="Timer\TimerOverlappedPool.cpp">
       <Filter>Timer</Filter>
+    </ClCompile>
+    <ClCompile Include="DB\DBConnection.cpp">
+      <Filter>DB</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -128,6 +134,9 @@
     </ClInclude>
     <ClInclude Include="Timer\TimerOverlappedPool.h">
       <Filter>Timer</Filter>
+    </ClInclude>
+    <ClInclude Include="DB\DBConnection.h">
+      <Filter>DB</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
