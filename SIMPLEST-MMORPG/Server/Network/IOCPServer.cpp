@@ -309,6 +309,7 @@ void IOCPServer::ShutDown()
 		return;
 	}
 
+	GameWorld::GetInstance().SaveAllPlayers();
 	DBManager::GetInstance().Shutdown();
 	TimerManager::GetInstance().Stop();
 

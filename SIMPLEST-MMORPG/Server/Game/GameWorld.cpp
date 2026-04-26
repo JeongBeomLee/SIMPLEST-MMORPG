@@ -331,6 +331,21 @@ void GameWorld::ReleaseDbId(int64_t dbId)
 	m_activeDbIds.erase(dbId);
 }
 
+PlayerRow GameWorld::SnapshotPlayer(const Player& player)
+{
+	PlayerRow row;
+	row.id = player.GetDbId();
+	row.name = player.GetName();
+	row.level = player.GetLevel();
+	row.exp = player.GetExp();
+	row.hp = player.GetHp();
+	row.maxHp = player.GetMaxHp();
+	Position pos = player.GetPos();
+	row.x = pos.x;
+	row.y = pos.y;
+	return row;
+}
+
 void GameWorld::BroadcastAttackEffect(ObjectID attackerId, int16_t cx, int16_t cy)
 {
 	SC_AttackEffect pkt;
@@ -419,6 +434,7 @@ void GameWorld::ProcessDisconnect(Session* session)
 		return;
 	}
 
+	PlayerRow saveRow = SnapshotPlayer(*player);
 	int64_t dbId = player->GetDbId();
 
 	// 시야 내 플레이어에게 SC_RemoveObject 전송
@@ -433,6 +449,16 @@ void GameWorld::ProcessDisconnect(Session* session)
 
 	// activeDbIds 에서 해제
 	ReleaseDbId(dbId);
+
+	// 비동기 DB 저장
+	DBManager::GetInstance().PostSaveTask(
+		[saveRow = std::move(saveRow)](DBConnection& db)
+		{
+			if (!db.SavePlayer(saveRow))
+			{
+				std::cerr << "[Save] disconnect save failed for dbId=" << saveRow.id << std::endl;
+			}
+		});
 }
 
 void GameWorld::ProcessAttack(Session* session, const char* data)
@@ -540,6 +566,13 @@ void GameWorld::OnLoginDBLoaded(int sessionId, const PlayerRow& row)
 	ViewProcessor::SendFullView(player.get());
 	ActivateNearbyMonsters(pos.x, pos.y);
 
+	// 마지막 로그인 시각 갱신
+	DBManager::GetInstance().PostSaveTask(
+		[dbId = row.id](DBConnection& db)
+		{
+			db.UpdateLastLogin(dbId);
+		});
+
 	std::cout << "[Login] " << row.name << " (dbId=" << row.id << ") level=" << row.level << " pos=(" << pos.x << "," << pos.y << ")" << std::endl;
 }
 
@@ -556,6 +589,31 @@ void GameWorld::OnLoginDBFailed(int sessionId, LoginFailReason reason)
 	failPkt.header.type = static_cast<uint16_t>(PacketType::SC_LOGIN_FAIL);
 	failPkt.reason = static_cast<uint8_t>(reason);
 	session->SendPacket(&failPkt, sizeof(failPkt));
+}
+
+void GameWorld::SaveAllPlayers()
+{
+	std::vector<PlayerRow> snapshots;
+	{
+		std::shared_lock lock(m_playersMutex);
+		snapshots.reserve(m_players.size());
+		for (const auto& [id, player] : m_players)
+		{
+			snapshots.push_back(SnapshotPlayer(*player));
+		}
+	}
+
+	for (auto& row : snapshots)
+	{
+		DBManager::GetInstance().PostSaveTask(
+			[row = std::move(row)](DBConnection& db)
+			{
+				if (!db.SavePlayer(row))
+				{
+					std::cerr << "[Save] failed for dbId=" << row.id << std::endl;
+				}
+			});
+	}
 }
 
 std::shared_ptr<Player> GameWorld::GetPlayer(ObjectID id)
@@ -877,7 +935,10 @@ void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 		RespawnMonster(targetId);
 		break;
 	case TimerType::DB_SAVE:
-		std::cout << "[Timer] DB_SAVE" << std::endl;
+	{
+		SaveAllPlayers();
+		TimerManager::GetInstance().AddTimer(TimerType::DB_SAVE, 0, DB_SAVE_INTERVAL_MS);
 		break;
+	}
 	}
 }

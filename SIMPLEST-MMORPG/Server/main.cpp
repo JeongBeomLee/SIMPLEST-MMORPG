@@ -41,6 +41,9 @@ int main()
 	// TimerManager 시작
 	TimerManager::GetInstance().Start(server.GetIOCPHandle());
 
+	// 자동 저장 시작
+	TimerManager::GetInstance().AddTimer(TimerType::DB_SAVE, 0, DB_SAVE_INTERVAL_MS);
+
 	// 종료 명령 대기
 	std::cout << "Press 'q' + Enter to shutdown" << std::endl;
 	while (true)

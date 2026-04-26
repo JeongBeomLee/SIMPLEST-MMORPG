@@ -37,6 +37,7 @@ public:
 	// DB
 	void OnLoginDBLoaded(int sessionId, const PlayerRow& row);
 	void OnLoginDBFailed(int sessionId, LoginFailReason reason);
+	void SaveAllPlayers();
 
 	// 조회 API
 	Map& GetMap() { return m_map; }
@@ -79,6 +80,7 @@ private:
 
 	bool TryClaimDbId(int64_t dbId);
 	void ReleaseDbId(int64_t dbId);
+	PlayerRow SnapshotPlayer(const Player& player);
 
 private:
 	Map m_map;
