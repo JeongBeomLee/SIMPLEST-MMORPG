@@ -184,6 +184,7 @@
     <ClInclude Include="Game\Sector.h" />
     <ClInclude Include="Game\SectorManager.h" />
     <ClInclude Include="Game\ViewProcessor.h" />
+    <ClInclude Include="Logger.h" />
     <ClInclude Include="Lua\LuaManager.h" />
     <ClInclude Include="Network\IOCPServer.h" />
     <ClInclude Include="Network\NetworkTypes.h" />

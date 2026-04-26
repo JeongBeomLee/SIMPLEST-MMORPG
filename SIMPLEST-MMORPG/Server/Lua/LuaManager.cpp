@@ -1,4 +1,5 @@
 ﻿#include "LuaManager.h"
+#include "../Logger.h"
 #include "sol/sol.hpp"
 #include <iostream>
 
@@ -21,14 +22,14 @@ std::vector<MonsterSpawnData> LuaManager::LoadMonsterSpawns(const char* filePath
 	}
 	catch (const sol::error& e)
 	{
-		std::cout << "Lua error: " << e.what() << std::endl;
+		LOG_ERROR("Lua error: " << e.what());
 		return result;
 	}
 
 	sol::table spawns = lua["monster_spawns"];
 	if (!spawns.valid())
 	{
-		std::cout << "monster_spawns table not found" << std::endl;
+		LOG_ERROR("monster_spawns table not found");
 		return result;
 	}
 
@@ -70,7 +71,7 @@ std::vector<MonsterSpawnData> LuaManager::LoadMonsterSpawns(const char* filePath
 		}
 	}
 
-	std::cout << "Loaded " << result.size() << " monster spawns" << std::endl;
+	LOG_INFO("Loaded " << result.size() << " monster spawns");
 	return result;
 }
 

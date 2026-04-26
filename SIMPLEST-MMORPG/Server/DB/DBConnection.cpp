@@ -1,4 +1,5 @@
 ﻿#include "DBConnection.h"
+#include "../Logger.h"
 #include <iostream>
 #include <sstream>
 
@@ -8,7 +9,7 @@ DBConnection::DBConnection()
 	SQLRETURN ret = SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &m_env);
 	if (!SQL_SUCCEEDED(ret))
 	{
-		std::cerr << "[DB] SQLAllocHandle(ENV) failed" << std::endl;
+		LOG_ERROR("[DB] SQLAllocHandle(ENV) failed");
 		m_env = SQL_NULL_HENV;
 		return;
 	}
@@ -17,7 +18,7 @@ DBConnection::DBConnection()
 	ret = SQLSetEnvAttr(m_env, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0);
 	if (!SQL_SUCCEEDED(ret))
 	{
-		std::cerr << "[DB] SQLSetEnvAttr failed" << std::endl;
+		LOG_ERROR("[DB] SQLSetEnvAttr failed");
 		SQLFreeHandle(SQL_HANDLE_ENV, m_env);
 		m_env = SQL_NULL_HENV;
 		return;
@@ -42,7 +43,7 @@ bool DBConnection::Connect(const std::string& server,
 {
 	if (m_env == SQL_NULL_HENV)
 	{
-		std::cerr << "[DB] env not initialized" << std::endl;
+		LOG_ERROR("[DB] env not initialized");
 		return false;
 	}
 
@@ -85,7 +86,7 @@ bool DBConnection::Connect(const std::string& server,
 		return false;
 	}
 
-	std::cout << "[DB] Connected to " << server << "/" << database << std::endl;
+	LOG_INFO("[DB] Connected to " << server << "/" << database);
 	return true;
 }
 
@@ -96,7 +97,7 @@ void DBConnection::Disconnect()
 		SQLDisconnect(m_conn);
 		SQLFreeHandle(SQL_HANDLE_DBC, m_conn);
 		m_conn = SQL_NULL_HDBC;
-		std::cout << "[DB] Disconnected" << std::endl;
+		LOG_INFO("[DB] Disconnected");
 	}
 }
 
@@ -377,10 +378,8 @@ void DBConnection::PrintDiagnostic(SQLSMALLINT handleType, SQLHANDLE handle, con
 		sqlState, &nativeErr,
 		msg, sizeof(msg), &msgLen) == SQL_SUCCESS)
 	{
-		std::cerr << "[DB][" << context << "] "
-			<< "SQLSTATE=" << sqlState
-			<< " native=" << nativeErr
-			<< " msg=" << msg << std::endl;
+		LOG_ERROR("[DB][" << context << "] SQLSTATE=" << sqlState
+		          << " native=" << nativeErr << " msg=" << msg);
 		++recNum;
 	}
 }

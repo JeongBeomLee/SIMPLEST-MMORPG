@@ -2,6 +2,7 @@
 #include "Session.h"
 #include "Protocol.h"
 #include "../Game/GameWorld.h"
+#include "../Logger.h"
 #include <iostream>
 
 void PacketHandler::HandlePacket(Session* session, const char* data, uint16_t size)
@@ -9,7 +10,7 @@ void PacketHandler::HandlePacket(Session* session, const char* data, uint16_t si
 	const PacketHeader* header = reinterpret_cast<const PacketHeader*>(data);
 	if (size < sizeof(PacketHeader) || header->size != size)
 	{
-		std::cout << "[Session " << session->GetId() << "] Invalid packet size" << std::endl;
+		LOG_WARN("[Session " << session->GetId() << "] Invalid packet size");
 		return;
 	}
 
@@ -34,7 +35,7 @@ void PacketHandler::HandlePacket(Session* session, const char* data, uint16_t si
 		world.ProcessChat(session, data);
 		break;
 	default:
-		std::cout << "[Session " << session->GetId() << "] Unknown packet type: " << header->type << std::endl;
+		LOG_WARN("[Session " << session->GetId() << "] Unknown packet type: " << header->type);
 		break;
 	}
 }

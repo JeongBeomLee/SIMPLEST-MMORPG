@@ -4,6 +4,7 @@
 #include "Constants.h"
 #include "Timer/TimerManager.h"
 #include "DB/DBManager.h"
+#include "Logger.h"
 
 int main()
 {
@@ -14,7 +15,7 @@ int main()
 	IOCPServer& server = IOCPServer::GetInstance();
 	if (!server.Init(SERVER_PORT))
 	{
-		std::cout << "Server init failed" << std::endl;
+		LOG_ERROR("Server init failed");
 		return -1;
 	}
 
@@ -33,7 +34,7 @@ int main()
 
 	if (!ok)
 	{
-		std::cerr << "[Main] DBManager init failed" << std::endl;
+		LOG_ERROR("[Main] DBManager init failed");
 		server.ShutDown();
 		return -1;
 	}
@@ -45,7 +46,7 @@ int main()
 	TimerManager::GetInstance().AddTimer(TimerType::DB_SAVE, 0, DB_SAVE_INTERVAL_MS);
 
 	// 종료 명령 대기
-	std::cout << "Press 'q' + Enter to shutdown" << std::endl;
+	LOG_INFO("Press 'q' + Enter to shutdown");
 	while (true)
 	{
 		char c;

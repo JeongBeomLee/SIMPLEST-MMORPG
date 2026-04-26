@@ -1,4 +1,5 @@
 ﻿#include "DBManager.h"
+#include "../Logger.h"
 #include <iostream>
 
 DBManager& DBManager::GetInstance()
@@ -17,12 +18,12 @@ bool DBManager::Init(HANDLE iocp,
 
 	if (!m_loginDB.Connect(server, database, user, password))
 	{
-		std::cerr << "[DBManager] login DB connect failed" << std::endl;
+		LOG_ERROR("[DBManager] login DB connect failed");
 		return false;
 	}
 	if (!m_saveDB.Connect(server, database, user, password))
 	{
-		std::cerr << "[DBManager] save DB connect failed" << std::endl;
+		LOG_ERROR("[DBManager] save DB connect failed");
 		return false;
 	}
 
@@ -35,7 +36,7 @@ bool DBManager::Init(HANDLE iocp,
 		WorkerThread(m_saveDB, m_saveQueue, m_saveMutex, m_saveCv);
 		});
 
-	std::cout << "[DBManager] initialized (login + save workers)" << std::endl;
+	LOG_INFO("[DBManager] initialized (login + save workers)");
 	return true;
 }
 
@@ -59,7 +60,7 @@ void DBManager::Shutdown()
 
 	m_loginDB.Disconnect();
 	m_saveDB.Disconnect();
-	std::cout << "[DBManager] shutdown complete" << std::endl;
+	LOG_INFO("[DBManager] shutdown complete");
 }
 
 void DBManager::PostLoginTask(DBTask task)
@@ -90,7 +91,7 @@ void DBManager::InvokeOnIOCP(IOCPCallback callback)
 	BOOL ok = PostQueuedCompletionStatus(m_iocp, 0, 0, &dbov->base.overlapped);
 	if (!ok)
 	{
-		std::cerr << "[DBManager] PostQCS failed: " << GetLastError() << std::endl;
+		LOG_ERROR("[DBManager] PostQCS failed: " << GetLastError());
 		delete dbov;
 	}
 }
@@ -122,7 +123,7 @@ void DBManager::WorkerThread(DBConnection& db,
 		}
 		catch (const std::exception& e)
 		{
-			std::cerr << "[DBManager] task threw: " << e.what() << std::endl;
+			LOG_ERROR("[DBManager] task threw: " << e.what());
 		}
 	}
 }

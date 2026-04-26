@@ -23,6 +23,9 @@
     <Filter Include="DB">
       <UniqueIdentifier>{39971ecb-c244-4e5f-82c2-c308e9ed0ea6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Logger">
+      <UniqueIdentifier>{a540fda3-d9ea-4aa6-96c0-07a50ac80415}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Network\RingBuffer.cpp">
@@ -143,6 +146,9 @@
     </ClInclude>
     <ClInclude Include="DB\DBManager.h">
       <Filter>DB</Filter>
+    </ClInclude>
+    <ClInclude Include="Logger.h">
+      <Filter>Logger</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

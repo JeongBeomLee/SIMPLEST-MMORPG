@@ -1,4 +1,5 @@
 ﻿#include "TimerOverlappedPool.h"
+#include "../Logger.h"
 #include <iostream>
 
 TimerOverlappedPool::TimerOverlappedPool(size_t capacity)
@@ -20,7 +21,7 @@ TimerOverlapped* TimerOverlappedPool::Acquire()
 
 	if (m_free.empty())
 	{
-		std::cout << "[TimerPool] Exhausted, fallback to new()" << std::endl;
+		LOG_WARN("[TimerPool] Exhausted, fallback to new()");
 		return new TimerOverlapped();
 	}
 

@@ -44,8 +44,8 @@ namespace LogInternal
 		LogInternal::GetFile().flush(); \
 	} while(0)
 
-#define LOG_INFO(msg)  LOG_AT("INFO ", msg)
-#define LOG_WARN(msg)  LOG_AT("WARN ", msg)
+#define LOG_INFO(msg)  LOG_AT("INFO", msg)
+#define LOG_WARN(msg)  LOG_AT("WARN", msg)
 #define LOG_ERROR(msg) LOG_AT("ERROR", msg)
 
 #ifdef _DEBUG

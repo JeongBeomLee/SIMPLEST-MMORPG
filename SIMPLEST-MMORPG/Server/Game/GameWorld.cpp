@@ -4,6 +4,7 @@
 #include "../Timer/TimerManager.h"
 #include "../DB/DBManager.h"
 #include "../Network/IOCPServer.h"
+#include "../Logger.h"
 #include "Types.h"
 #include "ViewProcessor.h"
 #include <iostream>
@@ -52,7 +53,7 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 
 			if (!db.LoadPlayerByName(name, row, found))
 			{
-				std::cerr << "[Login] LoadPlayer DB error for " << name << std::endl;
+				LOG_ERROR("[Login] LoadPlayer DB error for " << name);
 				DBManager::GetInstance().InvokeOnIOCP([sessionId]() {
 					GameWorld::GetInstance().OnLoginDBFailed(sessionId, LoginFailReason::DB_ERROR);
 					});
@@ -64,7 +65,7 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 				int64_t newId = 0;
 				if (!db.CreatePlayer(name, newId))
 				{
-					std::cerr << "[Login] CreatePlayer failed for " << name << std::endl;
+					LOG_ERROR("[Login] CreatePlayer failed for " << name);
 					DBManager::GetInstance().InvokeOnIOCP([sessionId]() {
 						GameWorld::GetInstance().OnLoginDBFailed(sessionId, LoginFailReason::DB_ERROR);
 						});
@@ -137,7 +138,7 @@ void GameWorld::OnPlayerDied(Player* victim)
 	int16_t respawnX, respawnY;
 	if (!m_sectorManager.AddObject(victim->GetId(), 0, 0, m_map, respawnX, respawnY))
 	{
-		std::cout << "Failed to respawn player " << victim->GetId() << std::endl;
+		LOG_ERROR("Failed to respawn player " << victim->GetId());
 		return;
 	}
 	victim->SetPos(respawnX, respawnY);
@@ -168,7 +169,7 @@ void GameWorld::OnPlayerDied(Player* victim)
 	// 새 위치 주변 몬스터 활성화
 	ActivateNearbyMonsters(respawnX, respawnY);
 
-	std::cout << "[Combat] Player " << victim->GetId() << " died and respawned at (" << respawnX << ", " << respawnY << ")" << std::endl;
+	LOG_INFO("[Combat] Player " << victim->GetId() << " died and respawned at (" << respawnX << ", " << respawnY << ")");
 }
 
 void GameWorld::StopRegenAndMaybeRestart(Player* player)
@@ -296,9 +297,9 @@ void GameWorld::OnMonsterDied(Monster* monster, const std::shared_ptr<Player>& k
 	// 30초 후 리스폰
 	TimerManager::GetInstance().AddTimer(TimerType::MONSTER_RESPAWN, monster->GetId(), MONSTER_RESPAWN_MS);
 
-	std::cout << "[Combat] Monster " << monster->GetId()
-		<< " died. Killer " << killer->GetId()
-		<< " gained " << expReward << " exp." << std::endl;
+	LOG_INFO("[Combat] Monster " << monster->GetId()
+	         << " died. Killer " << killer->GetId()
+	         << " gained " << expReward << " exp.");
 }
 
 void GameWorld::SendCombatMessage(Player* receiver, ObjectID attackerId, ObjectID targetId, int32_t damage)
@@ -493,7 +494,7 @@ void GameWorld::ProcessDisconnect(Session* session)
 		{
 			if (!db.SavePlayer(saveRow))
 			{
-				std::cerr << "[Save] disconnect save failed for dbId=" << saveRow.id << std::endl;
+				LOG_ERROR("[Save] disconnect save failed for dbId=" << saveRow.id);
 			}
 		});
 }
@@ -602,7 +603,7 @@ void GameWorld::ProcessChat(Session* session, const char* data)
 		BroadcastChatView(sender.get(), outPkt);
 	}
 
-	std::cout << "[Chat][" << (pkt->channel == 0 ? "VIEW" : "GLOBAL") << "] " << senderName << ": " << safeMsg << std::endl;
+	LOG_DEBUG("[Chat][" << (pkt->channel == 0 ? "VIEW" : "GLOBAL") << "] " << senderName << ": " << safeMsg);
 }
 
 void GameWorld::OnLoginDBLoaded(int sessionId, const PlayerRow& row)
@@ -610,14 +611,14 @@ void GameWorld::OnLoginDBLoaded(int sessionId, const PlayerRow& row)
 	Session* session = IOCPServer::GetInstance().GetSession(sessionId);
 	if (session == nullptr)
 	{
-		std::cout << "[Login] session " << sessionId << " disconnected during DB query" << std::endl;
+		LOG_INFO("[Login] session " << sessionId << " disconnected during DB query");
 		return;
 	}
 
 	// 중복 로그인 차단
 	if (!TryClaimDbId(row.id))
 	{
-		std::cout << "[Login] dbId " << row.id << " (" << row.name<< ") already in use" << std::endl;
+		LOG_WARN("[Login] dbId " << row.id << " (" << row.name << ") already in use");
 		OnLoginDBFailed(sessionId, LoginFailReason::DUPLICATE_LOGIN);
 		return;
 	}
@@ -658,7 +659,7 @@ void GameWorld::OnLoginDBLoaded(int sessionId, const PlayerRow& row)
 			db.UpdateLastLogin(dbId);
 		});
 
-	std::cout << "[Login] " << row.name << " (dbId=" << row.id << ") level=" << row.level << " pos=(" << pos.x << "," << pos.y << ")" << std::endl;
+	LOG_INFO("[Login] " << row.name << " (dbId=" << row.id << ") level=" << row.level << " pos=(" << pos.x << "," << pos.y << ")");
 }
 
 void GameWorld::OnLoginDBFailed(int sessionId, LoginFailReason reason)
@@ -695,7 +696,7 @@ void GameWorld::SaveAllPlayers()
 			{
 				if (!db.SavePlayer(row))
 				{
-					std::cerr << "[Save] failed for dbId=" << row.id << std::endl;
+					LOG_ERROR("[Save] failed for dbId=" << row.id);
 				}
 			});
 	}
@@ -732,7 +733,7 @@ void GameWorld::SpawnMonsters()
         int16_t spawnX, spawnY;
         if (!m_sectorManager.AddObject(id, data.x, data.y, m_map, spawnX, spawnY))
         {
-            std::cout << "Failed to spawn " << data.name << " at (" << data.x << "," << data.y << ")" << std::endl;
+            LOG_WARN("Failed to spawn " << data.name << " at (" << data.x << "," << data.y << ")");
             continue;
         }
 
@@ -745,7 +746,7 @@ void GameWorld::SpawnMonsters()
         m_monsters.push_back(std::move(monster));
     }
 
-	std::cout << "Spawned " << m_monsters.size() << " monsters" << std::endl;
+	LOG_INFO("Spawned " << m_monsters.size() << " monsters");
 }
 
 Monster* GameWorld::GetMonster(ObjectID id)
@@ -815,7 +816,7 @@ void GameWorld::RespawnMonster(ObjectID monsterId)
 		}
 	}
 
-	std::cout << "[Combat] Monster " << monsterId << " respawned at (" << outX << ", " << outY << ")" << std::endl;
+	LOG_INFO("[Combat] Monster " << monsterId << " respawned at (" << outX << ", " << outY << ")");
 }
 
 void GameWorld::BroadcastAddMonster(Monster* monster)

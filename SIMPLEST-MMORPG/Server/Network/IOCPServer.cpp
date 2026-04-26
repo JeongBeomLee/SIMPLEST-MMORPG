@@ -2,6 +2,7 @@
 #include "../Game/GameWorld.h"
 #include "../Timer/TimerManager.h"
 #include "../DB/DBManager.h"
+#include "../Logger.h"
 #include <iostream>
 #include <WS2tcpip.h>
 
@@ -20,7 +21,7 @@ bool IOCPServer::Init(uint16_t port, int threadMultiplier)
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 	{
-		std::cout << "WSAStartUp failed" << std::endl;
+		LOG_ERROR("WSAStartUp failed");
 		return false;
 	}
 
@@ -28,7 +29,7 @@ bool IOCPServer::Init(uint16_t port, int threadMultiplier)
 	m_hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 	if (m_hIOCP == NULL)
 	{
-		std::cout << "CreateIOCompletionPort failed" << std::endl;
+		LOG_ERROR("CreateIOCompletionPort failed");
 		return false;
 	}
 
@@ -39,7 +40,7 @@ bool IOCPServer::Init(uint16_t port, int threadMultiplier)
 	);
 	if (m_listenSocket == INVALID_SOCKET)
 	{
-		std::cout << "WSASocket failed" << std::endl;
+		LOG_ERROR("WSASocket failed");
 		return false;
 	}
 
@@ -52,14 +53,14 @@ bool IOCPServer::Init(uint16_t port, int threadMultiplier)
 
 	if (bind(m_listenSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
 	{
-		std::cout << "bind failed" << std::endl;
+		LOG_ERROR("bind failed");
 		return false;
 	}
 	
 	// 5. 리슨 시작
 	if (listen(m_listenSocket, SOMAXCONN) == SOCKET_ERROR)
 	{
-		std::cout << "listen failed" << std::endl;
+		LOG_ERROR("listen failed");
 		return false;
 	}
 
@@ -83,7 +84,7 @@ bool IOCPServer::Init(uint16_t port, int threadMultiplier)
 		m_workerThreads.emplace_back(&IOCPServer::WorkerThread, this);
 	}
 
-	std::cout << "Server started on port " << port << std::endl;
+	LOG_INFO("Server started on port " << port);
 	return true;
 }
 
@@ -160,7 +161,7 @@ void IOCPServer::WorkerThread()
 				}
 				catch (const std::exception& e)
 				{
-					std::cerr << "[IOCP] DB callback threw: " << e.what() << std::endl;
+					LOG_ERROR("[IOCP] DB callback threw: " << e.what());
 				}
 			}
 			break;
@@ -196,7 +197,7 @@ void IOCPServer::PostAccept()
 
 	if (ret == FALSE && WSAGetLastError() != ERROR_IO_PENDING)
 	{
-		std::cout << "AcceptEx failed" << std::endl;
+		LOG_ERROR("AcceptEx failed");
 		closesocket(clientSocket);
 	}
 }
@@ -231,7 +232,7 @@ void IOCPServer::OnAccept(OverlappedEx* ovEx)
 	// 첫 recv 게시
 	session->PostRecv();
 
-	std::cout << "Client connected. Session ID: " << id << std::endl;
+	LOG_INFO("Client connected. Session ID: " << id);
 
 	// 다음 접속 대기
 	PostAccept();
@@ -279,7 +280,7 @@ void IOCPServer::DisconnectSession(Session* session)
 
 	FreeSessionId(id);
 
-	std::cout << "Client disconnected. Session ID: " << id << std::endl;
+	LOG_INFO("Client disconnected. Session ID: " << id);
 }
 
 int IOCPServer::AllocSessionId()
