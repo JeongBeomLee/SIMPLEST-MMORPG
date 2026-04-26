@@ -13,7 +13,7 @@ public:
 
 	// 이동: 시야 diff 계산 후 ADD/REMOVE/MOVE 패킷 전송
 	//   oldX/oldY 는 이동 전 위치 (이미 me 의 위치는 newX/newY 로 갱신된 상태)
-	static void ProcessMoveView(GameObject* moved, int16_t oldX, int16_t oldY);
+	static void ProcessMoveView(GameObject* moved, int16_t oldX, int16_t oldY, uint64_t moveTime = 0);
 
 	// 로그아웃/사망: 주변 플레이어에게 내가 사라졌음을 알림
 	static void SendDisappear(Player* me);
@@ -28,6 +28,6 @@ private:
 	// 패킷 전송 헬퍼
 	static void SendAddObject(Player* receiver, const GameObject* target);
 	static void SendRemoveObject(Player* receiver, ObjectID targetId);
-	static void SendMoveObject(Player* receiver, const GameObject* target);
+	static void SendMoveObject(Player* receiver, const GameObject* target, uint64_t moveTime = 0);
 };
 

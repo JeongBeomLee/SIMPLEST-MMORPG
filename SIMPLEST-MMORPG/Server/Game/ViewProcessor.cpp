@@ -53,7 +53,7 @@ void ViewProcessor::SendRemoveObject(Player* receiver, ObjectID targetId)
 	receiver->GetSession()->SendPacket(&pkt, sizeof(pkt));
 }
 
-void ViewProcessor::SendMoveObject(Player* receiver, const GameObject* target)
+void ViewProcessor::SendMoveObject(Player* receiver, const GameObject* target, uint64_t moveTime)
 {
 	if (!receiver || !target)
 	{
@@ -68,6 +68,7 @@ void ViewProcessor::SendMoveObject(Player* receiver, const GameObject* target)
 	Position tp = target->GetPos();
 	pkt.x = tp.x;
 	pkt.y = tp.y;
+	pkt.move_time = moveTime;
 
 	receiver->GetSession()->SendPacket(&pkt, sizeof(pkt));
 }
@@ -129,7 +130,7 @@ void ViewProcessor::SendFullView(Player* me)
 	}
 }
 
-void ViewProcessor::ProcessMoveView(GameObject* moved, int16_t oldX, int16_t oldY)
+void ViewProcessor::ProcessMoveView(GameObject* moved, int16_t oldX, int16_t oldY, uint64_t moveTime)
 {
 	if (!moved)
 	{

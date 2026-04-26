@@ -34,6 +34,10 @@ void PacketHandler::HandlePacket(Session* session, const char* data, uint16_t si
 		if (size != sizeof(CS_Chat)) return;
 		world.ProcessChat(session, data);
 		break;
+	case PacketType::CS_TELEPORT:
+		if (size != sizeof(CS_Teleport)) return;
+		world.ProcessTeleport(session, data);
+		break;
 	default:
 		LOG_WARN("[Session " << session->GetId() << "] Unknown packet type: " << header->type);
 		break;

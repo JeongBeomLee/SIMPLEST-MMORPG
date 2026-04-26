@@ -193,6 +193,7 @@ int main()
 						mp.header.size = sizeof(mp);
 						mp.header.type = static_cast<uint16_t>(PacketType::CS_MOVE);
 						mp.direction = static_cast<uint8_t>(gameInput.moveDir);
+						mp.move_time = 0;  // 일반 클라는 latency 측정 안 함
 						client.SendPacket(&mp, sizeof(mp));
 
 						// 로컬 예측

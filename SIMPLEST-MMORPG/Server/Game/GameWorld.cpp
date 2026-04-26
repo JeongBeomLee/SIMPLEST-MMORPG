@@ -9,6 +9,7 @@
 #include "ViewProcessor.h"
 #include <iostream>
 #include <algorithm>
+#include <random>
 
 GameWorld& GameWorld::GetInstance()
 {
@@ -161,6 +162,7 @@ void GameWorld::OnPlayerDied(Player* victim)
 	movePkt.object_id = victim->GetId();
 	movePkt.x = respawnX;
 	movePkt.y = respawnY;
+	movePkt.move_time = 0;
 	victim->GetSession()->SendPacket(&movePkt, sizeof(movePkt));
 
 	// 새 위치에서 시야 갱신
@@ -461,6 +463,61 @@ void GameWorld::ProcessMove(Session* session, const char* data)
 	// 시야 diff 처리
 	ViewProcessor::ProcessMoveView(player.get(), oldX, oldY);
 	ActivateNearbyMonsters(newX, newY);
+
+	// mover 본인에게 ack (latency 측정용 — move_time echo)
+	SC_MoveObject ackPkt;
+	ackPkt.header.size = sizeof(ackPkt);
+	ackPkt.header.type = static_cast<uint16_t>(PacketType::SC_MOVE_OBJECT);
+	ackPkt.object_id = id;
+	ackPkt.x = newX;
+	ackPkt.y = newY;
+	ackPkt.move_time = pkt->move_time;
+	session->SendPacket(&ackPkt, sizeof(ackPkt));
+}
+
+void GameWorld::ProcessTeleport(Session* session, const char* /*data*/)
+{
+	ObjectID id = session->GetId();
+	auto player = GetPlayer(id);
+	if (!player) return;
+
+	Position oldPos = player->GetPos();
+	int16_t oldX = oldPos.x;
+	int16_t oldY = oldPos.y;
+
+	// 기존 점유 해제
+	m_sectorManager.RemoveObject(id, oldX, oldY);
+
+	// 랜덤 좌표 생성 (맵 가장자리 회피 + 빈 타일 spiral search)
+	thread_local std::mt19937 rng(std::random_device{}());
+	std::uniform_int_distribution<int16_t> distX(10, MAP_WIDTH - 10);
+	std::uniform_int_distribution<int16_t> distY(10, MAP_HEIGHT - 10);
+
+	int16_t targetX = distX(rng);
+	int16_t targetY = distY(rng);
+
+	int16_t newX, newY;
+	if (!m_sectorManager.AddObject(id, targetX, targetY, m_map, newX, newY))
+	{
+		// 실패 시 (0,0) 부근으로 복귀 (예외 케이스)
+		m_sectorManager.AddObject(id, 0, 0, m_map, newX, newY);
+	}
+
+	player->SetPos(newX, newY);
+
+	// 시야 갱신
+	ViewProcessor::ProcessMoveView(player.get(), oldX, oldY);
+	ActivateNearbyMonsters(newX, newY);
+
+	// mover 본인에게 위치 알림 (클라가 자기 위치 갱신)
+	SC_MoveObject ackPkt;
+	ackPkt.header.size = sizeof(ackPkt);
+	ackPkt.header.type = static_cast<uint16_t>(PacketType::SC_MOVE_OBJECT);
+	ackPkt.object_id = id;
+	ackPkt.x = newX;
+	ackPkt.y = newY;
+	ackPkt.move_time = 0;
+	session->SendPacket(&ackPkt, sizeof(ackPkt));
 }
 
 void GameWorld::ProcessDisconnect(Session* session)

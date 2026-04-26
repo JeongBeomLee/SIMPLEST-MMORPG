@@ -7,6 +7,7 @@ enum class PacketType : uint16_t
 	CS_MOVE,
 	CS_ATTACK,
 	CS_CHAT,
+	CS_TELEPORT,  // 랜덤 빈 타일 이동 (StressTest 분산용)
 	SC_LOGIN_OK = 2001,
 	SC_LOGIN_FAIL,
 	SC_ADD_OBJECT,
@@ -37,9 +38,15 @@ struct CS_Move
 {
 	PacketHeader header;
 	uint8_t direction;
+	uint64_t move_time;  // 클라가 보낸 시각 (latency 측정용, 0이면 미사용)
 };
 
 struct CS_Attack
+{
+	PacketHeader header;
+};
+
+struct CS_Teleport
 {
 	PacketHeader header;
 };
@@ -103,6 +110,7 @@ struct SC_MoveObject
 	PacketHeader header;
 	uint32_t object_id;
 	int16_t x, y;
+	uint64_t move_time;
 };
 
 struct SC_StatChange

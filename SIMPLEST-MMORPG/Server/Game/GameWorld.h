@@ -34,6 +34,7 @@ public:
 	void ProcessDisconnect(Session* session);
 	void ProcessAttack(Session* session, const char* data);
 	void ProcessChat(Session* session, const char* data);
+	void ProcessTeleport(Session* session, const char* data);
 
 	// DB
 	void OnLoginDBLoaded(int sessionId, const PlayerRow& row);
