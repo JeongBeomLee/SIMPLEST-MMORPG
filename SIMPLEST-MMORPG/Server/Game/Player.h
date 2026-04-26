@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <chrono>
 #include <shared_mutex>
+#include <atomic>
 
 class Session;
 
@@ -23,6 +24,10 @@ public:
 	void Die();
 	void RegenHP();
 
+	// HP 회복 타이머
+	bool TryStartRegen();
+	void StopRegen();
+
 	// 쿨다운
 	bool CanMove() const;
 	bool CanAttack() const;
@@ -35,5 +40,7 @@ private:
 
 	std::chrono::steady_clock::time_point m_lastMoveTime{};
 	std::chrono::steady_clock::time_point m_lastAttackTime{};
+
+	std::atomic<bool> m_regenActive{ false };
 };
 

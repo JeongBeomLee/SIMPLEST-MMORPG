@@ -51,6 +51,17 @@ void Player::RegenHP()
 	m_hp = std::min(m_hp + regen, m_maxHp);
 }
 
+bool Player::TryStartRegen()
+{
+	bool expected = false;
+	return m_regenActive.compare_exchange_strong(expected, true);
+}
+
+void Player::StopRegen()
+{
+	m_regenActive.store(false);
+}
+
 bool Player::CanMove() const
 {
 	std::shared_lock lock(m_lock);

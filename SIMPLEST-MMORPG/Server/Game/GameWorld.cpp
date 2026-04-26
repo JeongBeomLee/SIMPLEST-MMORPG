@@ -124,6 +124,7 @@ void GameWorld::OnPlayerDied(Player* victim)
 
 	// Player 상태 초기화 (HP 풀, exp -50%, pos = (0, 0))
 	victim->Die();
+	victim->StopRegen();
 
 	// 새 위치 점유 (빈 타일 탐색)
 	int16_t respawnX, respawnY;
@@ -161,6 +162,17 @@ void GameWorld::OnPlayerDied(Player* victim)
 	ActivateNearbyMonsters(respawnX, respawnY);
 
 	std::cout << "[Combat] Player " << victim->GetId() << " died and respawned at (" << respawnX << ", " << respawnY << ")" << std::endl;
+}
+
+void GameWorld::StopRegenAndMaybeRestart(Player* player)
+{
+	player->StopRegen();
+
+	// StopRegen 직후 피격으로 HP가 깎였는지 확인
+	if (player->GetHp() < player->GetMaxHp() && player->TryStartRegen())
+	{
+		TimerManager::GetInstance().AddTimer(TimerType::HP_REGEN, player->GetId(), HP_REGEN_INTERVAL_MS);
+	}
 }
 
 void GameWorld::ActivateNearbyMonsters(int16_t x, int16_t y)
@@ -689,7 +701,13 @@ void GameWorld::MonsterAttackPlayer(Monster* attacker, Player* victim)
 	statPkt.level = victim->GetLevel();
 	victim->GetSession()->SendPacket(&statPkt, sizeof(statPkt));
 
-	// 4. 사망 처리
+	// HP 회복 타이머 시작
+	if (!victim->IsDead() && victim->TryStartRegen())
+	{
+		TimerManager::GetInstance().AddTimer(TimerType::HP_REGEN, victim->GetId(), HP_REGEN_INTERVAL_MS);
+	}
+
+	// 사망 처리
 	if (victim->IsDead())
 	{
 		OnPlayerDied(victim);
@@ -701,8 +719,49 @@ void GameWorld::HandleTimerEvent(TimerType type, uint32_t targetId)
 	switch (type)
 	{
 	case TimerType::HP_REGEN:
-		std::cout << "[Timer] HP_REGEN " << targetId << std::endl;
+	{
+		auto player = GetPlayer(targetId);
+		if (!player)
+		{
+			break;
+		}
+
+		if (player->IsDead())
+		{
+			player->StopRegen();
+			break;
+		}
+
+		// 풀피 도달 시 종료
+		if (player->GetHp() >= player->GetMaxHp())
+		{
+			StopRegenAndMaybeRestart(player.get());
+			break;
+		}
+
+		player->RegenHP();
+
+		SC_StatChange statPkt;
+		statPkt.header.size = sizeof(statPkt);
+		statPkt.header.type = static_cast<uint16_t>(PacketType::SC_STAT_CHANGE);
+		statPkt.object_id = player->GetId();
+		statPkt.hp = player->GetHp();
+		statPkt.max_hp = player->GetMaxHp();
+		statPkt.exp = player->GetExp();
+		statPkt.level = player->GetLevel();
+		player->GetSession()->SendPacket(&statPkt, sizeof(statPkt));
+
+		// 풀피 도달 시 종료 더블체크
+		if (player->GetHp() >= player->GetMaxHp())
+		{
+			StopRegenAndMaybeRestart(player.get());
+			break;
+		}
+
+		// 아직 회복 필요
+		TimerManager::GetInstance().AddTimer(TimerType::HP_REGEN, targetId, HP_REGEN_INTERVAL_MS);
 		break;
+	}
 	
 	case TimerType::MONSTER_AI:
 	{
