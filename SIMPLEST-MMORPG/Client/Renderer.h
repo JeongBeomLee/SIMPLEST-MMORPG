@@ -15,7 +15,7 @@ public:
 	bool Init();
 
 	// 화면별 렌더링 (상태 머신이 호출)
-	void RenderMainMenu(const std::wstring& nameInput);
+	void RenderMainMenu(const std::wstring& nameInput, const std::wstring& errorMsg = L"");
 	void RenderGame();
 
 	// 로그/채팅 창에 한 줄 추가 (Thread-Safe)

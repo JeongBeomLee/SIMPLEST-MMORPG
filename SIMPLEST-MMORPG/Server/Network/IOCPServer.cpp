@@ -8,19 +8,10 @@
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "mswsock.lib")
 
-IOCPServer::IOCPServer()
-	: m_hIOCP(NULL)
-	, m_listenSocket(INVALID_SOCKET)
-	, m_running(false)
+IOCPServer& IOCPServer::GetInstance()
 {
-	m_sessions.fill(nullptr);
-	ZeroMemory(&m_acceptOv, sizeof(m_acceptOv));
-	ZeroMemory(m_acceptBuf, sizeof(m_acceptBuf));
-}
-
-IOCPServer::~IOCPServer()
-{
-	ShutDown();
+	static IOCPServer instance;
+	return instance;
 }
 
 bool IOCPServer::Init(uint16_t port, int threadMultiplier)
@@ -371,4 +362,13 @@ void IOCPServer::ShutDown()
 
 	// Winsock 정리
 	WSACleanup();
+}
+
+Session* IOCPServer::GetSession(int id)
+{
+	if (id < 0 || id >= MAX_PLAYERS)
+	{
+		return nullptr;
+	}
+	return m_sessions[id];
 }

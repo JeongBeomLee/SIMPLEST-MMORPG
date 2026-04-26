@@ -9,6 +9,8 @@
 #include "Player.h"
 #include "Monster.h"
 #include "../Network/NetworkTypes.h"
+#include "../DB/DBConnection.h"
+#include "Protocol.h"
 
 class Session;
 
@@ -31,6 +33,10 @@ public:
 	void ProcessMove(Session* session, const char* data);
 	void ProcessDisconnect(Session* session);
 	void ProcessAttack(Session* session, const char* data);
+
+	// DB
+	void OnLoginDBLoaded(int sessionId, const PlayerRow& row);
+	void OnLoginDBFailed(int sessionId, LoginFailReason reason);
 
 	// 조회 API
 	Map& GetMap() { return m_map; }
@@ -60,7 +66,7 @@ private:
 	~GameWorld() = default;
 
 	// 내부 헬퍼
-	ObjectID AddPlayer(Session* session, const std::string& name);
+	ObjectID AddPlayer(Session* session, const PlayerRow& row);
 	void RemovePlayer(ObjectID id);
 	void OnPlayerDied(Player* victim);
 	void StopRegenAndMaybeRestart(Player* player);
@@ -71,6 +77,9 @@ private:
 	void OnMonsterDied(Monster* monster, const std::shared_ptr<Player>& killer);
 	void SendCombatMessage(Player* receiver, ObjectID attackerId, ObjectID targetId, int32_t damage);
 
+	bool TryClaimDbId(int64_t dbId);
+	void ReleaseDbId(int64_t dbId);
+
 private:
 	Map m_map;
 	SectorManager m_sectorManager;
@@ -79,4 +88,7 @@ private:
 	mutable std::shared_mutex m_playersMutex;
 
 	std::vector<std::unique_ptr<Monster>> m_monsters;
+
+	std::unordered_set<int64_t> m_activeDbIds;
+	std::mutex m_dbIdMutex;
 };

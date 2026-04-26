@@ -99,6 +99,17 @@ void NetworkClient::SendPacket(const void* data, uint16_t size)
 	}
 }
 
+bool NetworkClient::ConsumeLoginFail(uint8_t& outReason)
+{
+	bool expected = true;
+	if (m_hasLoginFail.compare_exchange_strong(expected, false))
+	{
+		outReason = m_loginFailReason.load();
+		return true;
+	}
+	return false;
+}
+
 void NetworkClient::RecvThread()
 {
 	while (m_running)
@@ -169,7 +180,10 @@ void NetworkClient::OnPacket(const char* data, uint16_t size)
 	}
 	case PacketType::SC_LOGIN_FAIL:
 	{
-		LOG("LOGIN_FAIL received");
+		const SC_LoginFail* p = reinterpret_cast<const SC_LoginFail*>(data);
+		m_loginFailReason.store(p->reason);
+		m_hasLoginFail.store(true);
+		LOG("LOGIN_FAIL received reason=" << static_cast<int>(p->reason));
 		break;
 	}
 	case PacketType::SC_ADD_OBJECT:

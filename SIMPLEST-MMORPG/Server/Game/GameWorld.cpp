@@ -2,7 +2,8 @@
 #include "../Network/Session.h"
 #include "../Lua/LuaManager.h"
 #include "../Timer/TimerManager.h"
-#include "Protocol.h"
+#include "../DB/DBManager.h"
+#include "../Network/IOCPServer.h"
 #include "Types.h"
 #include "ViewProcessor.h"
 #include <iostream>
@@ -41,57 +42,63 @@ void GameWorld::ProcessLogin(Session* session, const char* data)
 	// 패킷 파싱
 	const CS_Login* pkt = reinterpret_cast<const CS_Login*>(data);
 	std::string name(pkt->name);
+	int sessionId = session->GetId();
 
-	// 플레이어 생성 + 월드 등록
-	ObjectID id = AddPlayer(session, name);
-	if (id == INVALID_PLAYER_ID)
-	{
-		SC_LoginFail failPkt;
-		failPkt.header.size = sizeof(failPkt);
-		failPkt.header.type = static_cast<uint16_t>(PacketType::SC_LOGIN_FAIL);
-		failPkt.reason = 1;
-		session->SendPacket(&failPkt, sizeof(failPkt));
-		return;
-	}
+	DBManager::GetInstance().PostLoginTask(
+		[sessionId, name](DBConnection& db)
+		{
+			PlayerRow row;
+			bool found = false;
 
-	// SC_LoginOk 패킷 전송
-	auto player = GetPlayer(id);
-	if (!player)
-	{
-		return;
-	}
+			if (!db.LoadPlayerByName(name, row, found))
+			{
+				std::cerr << "[Login] LoadPlayer DB error for " << name << std::endl;
+				DBManager::GetInstance().InvokeOnIOCP([sessionId]() {
+					GameWorld::GetInstance().OnLoginDBFailed(sessionId, LoginFailReason::DB_ERROR);
+					});
+				return;
+			}
 
-	SC_LoginOk okPkt;
-	okPkt.header.size = sizeof(okPkt);
-	okPkt.header.type = static_cast<uint16_t>(PacketType::SC_LOGIN_OK);
-	okPkt.my_id = id;
-	okPkt.level = player->GetLevel();
-	okPkt.exp = player->GetExp();
-	okPkt.hp = player->GetHp();
-	okPkt.max_hp = player->GetMaxHp();
+			if (!found)
+			{
+				int64_t newId = 0;
+				if (!db.CreatePlayer(name, newId))
+				{
+					std::cerr << "[Login] CreatePlayer failed for " << name << std::endl;
+					DBManager::GetInstance().InvokeOnIOCP([sessionId]() {
+						GameWorld::GetInstance().OnLoginDBFailed(sessionId, LoginFailReason::DB_ERROR);
+						});
+					return;
+				}
 
-	Position playerPos = player->GetPos();
-	okPkt.x = playerPos.x;
-	okPkt.y = playerPos.y;
+				row.id = newId;
+				row.name = name;
+				row.level = 1;
+				row.exp = 0;
+				row.hp = 100;
+				row.maxHp = 100;
+				row.x = 0;
+				row.y = 0;
+			}
 
-	session->SendPacket(&okPkt, sizeof(okPkt));
-
-	// 시야 내 객체들을 나에게 + 나를 시야 내 플레이어에게
-	ViewProcessor::SendFullView(player.get());
-
-	// 시야 내 몬스터 AI 깨우기
-	ActivateNearbyMonsters(playerPos.x, playerPos.y);
+			DBManager::GetInstance().InvokeOnIOCP([sessionId, row]() {
+				GameWorld::GetInstance().OnLoginDBLoaded(sessionId, row);
+				});
+		});
 }
 
-ObjectID GameWorld::AddPlayer(Session* session, const std::string& name)
+ObjectID GameWorld::AddPlayer(Session* session, const PlayerRow& row)
 {
 	ObjectID id = session->GetId();
 
-	auto player = std::make_shared<Player>(id, session, name);
+	auto player = std::make_shared<Player>(id, session, row.name, row.id);
+	player->SetLevel(row.level);
+	player->SetExp(row.exp);
+	player->SetMaxHp(row.maxHp);
+	player->SetHp(row.hp);
 
-	// 빈 타일 탐색
 	int16_t spawnX, spawnY;
-	if (!m_sectorManager.AddObject(id, 0, 0, m_map, spawnX, spawnY))
+	if (!m_sectorManager.AddObject(id, row.x, row.y, m_map, spawnX, spawnY))
 	{
 		return INVALID_PLAYER_ID;
 	}
@@ -311,6 +318,19 @@ void GameWorld::SendCombatMessage(Player* receiver, ObjectID attackerId, ObjectI
 	receiver->GetSession()->SendPacket(&pkt, sizeof(pkt));
 }
 
+bool GameWorld::TryClaimDbId(int64_t dbId)
+{
+	std::lock_guard lock(m_dbIdMutex);
+	auto [it, inserted] = m_activeDbIds.insert(dbId);
+	return inserted;
+}
+
+void GameWorld::ReleaseDbId(int64_t dbId)
+{
+	std::lock_guard lock(m_dbIdMutex);
+	m_activeDbIds.erase(dbId);
+}
+
 void GameWorld::BroadcastAttackEffect(ObjectID attackerId, int16_t cx, int16_t cy)
 {
 	SC_AttackEffect pkt;
@@ -399,15 +419,20 @@ void GameWorld::ProcessDisconnect(Session* session)
 		return;
 	}
 
-	// 1. 시야 내 플레이어에게 SC_RemoveObject 전송
+	int64_t dbId = player->GetDbId();
+
+	// 시야 내 플레이어에게 SC_RemoveObject 전송
 	ViewProcessor::SendDisappear(player.get());
 
-	// 2. 섹터에서 제거
+	// 섹터에서 제거
 	Position dp = player->GetPos();
 	m_sectorManager.RemoveObject(id, dp.x, dp.y);
 
-	// 3. m_players 에서 제거
+	// m_players 에서 제거
 	RemovePlayer(id);
+
+	// activeDbIds 에서 해제
+	ReleaseDbId(dbId);
 }
 
 void GameWorld::ProcessAttack(Session* session, const char* data)
@@ -467,6 +492,70 @@ void GameWorld::ProcessAttack(Session* session, const char* data)
 	BroadcastAttackEffect(player->GetId(), px, py);
 
 	player->OnAttackPerformed();
+}
+
+void GameWorld::OnLoginDBLoaded(int sessionId, const PlayerRow& row)
+{
+	Session* session = IOCPServer::GetInstance().GetSession(sessionId);
+	if (session == nullptr)
+	{
+		std::cout << "[Login] session " << sessionId << " disconnected during DB query" << std::endl;
+		return;
+	}
+
+	// 중복 로그인 차단
+	if (!TryClaimDbId(row.id))
+	{
+		std::cout << "[Login] dbId " << row.id << " (" << row.name<< ") already in use" << std::endl;
+		OnLoginDBFailed(sessionId, LoginFailReason::DUPLICATE_LOGIN);
+		return;
+	}
+
+	ObjectID id = AddPlayer(session, row);
+	if (id == INVALID_PLAYER_ID)
+	{
+		OnLoginDBFailed(sessionId, LoginFailReason::SPAWN_FULL);
+		return;
+	}
+
+	auto player = GetPlayer(id);
+	if (!player)
+	{
+		return;
+	}
+
+	SC_LoginOk okPkt;
+	okPkt.header.size = sizeof(okPkt);
+	okPkt.header.type = static_cast<uint16_t>(PacketType::SC_LOGIN_OK);
+	okPkt.my_id = id;
+	okPkt.level = player->GetLevel();
+	okPkt.exp = player->GetExp();
+	okPkt.hp = player->GetHp();
+	okPkt.max_hp = player->GetMaxHp();
+	Position pos = player->GetPos();
+	okPkt.x = pos.x;
+	okPkt.y = pos.y;
+	session->SendPacket(&okPkt, sizeof(okPkt));
+
+	ViewProcessor::SendFullView(player.get());
+	ActivateNearbyMonsters(pos.x, pos.y);
+
+	std::cout << "[Login] " << row.name << " (dbId=" << row.id << ") level=" << row.level << " pos=(" << pos.x << "," << pos.y << ")" << std::endl;
+}
+
+void GameWorld::OnLoginDBFailed(int sessionId, LoginFailReason reason)
+{
+	Session* session = IOCPServer::GetInstance().GetSession(sessionId);
+	if (session == nullptr)
+	{
+		return;
+	}
+
+	SC_LoginFail failPkt;
+	failPkt.header.size = sizeof(failPkt);
+	failPkt.header.type = static_cast<uint16_t>(PacketType::SC_LOGIN_FAIL);
+	failPkt.reason = static_cast<uint8_t>(reason);
+	session->SendPacket(&failPkt, sizeof(failPkt));
 }
 
 std::shared_ptr<Player> GameWorld::GetPlayer(ObjectID id)

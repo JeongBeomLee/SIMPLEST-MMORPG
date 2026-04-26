@@ -328,7 +328,7 @@ void Renderer::DrawAttackEffect(int16_t centerX, int16_t centerY, int frame, int
 	}
 }
 
-void Renderer::RenderMainMenu(const std::wstring& nameInput)
+void Renderer::RenderMainMenu(const std::wstring& nameInput, const std::wstring& errorMsg)
 {
 	Clear();
 	++m_frameCount;
@@ -406,6 +406,12 @@ void Renderer::RenderMainMenu(const std::wstring& nameInput)
 	// 안내 텍스트
 	DrawString(48, 23, L"[ ENTER ] to login", FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 	DrawString(49, 25, L"[ ESC ] to quit", FOREGROUND_RED | FOREGROUND_INTENSITY);
+	if (!errorMsg.empty())
+	{
+		WORD red = FOREGROUND_RED | FOREGROUND_INTENSITY;
+		int errorX = (SCREEN_W - static_cast<int>(errorMsg.size())) / 2;
+		DrawString(errorX, 27, errorMsg.c_str(), red);
+	}
 
 	Flush();
 }

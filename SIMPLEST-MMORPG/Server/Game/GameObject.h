@@ -51,6 +51,16 @@ public:
 		std::unique_lock lock(m_lock);
 		m_hp = hp;
 	}
+	void SetLevel(uint16_t level)
+	{
+		std::unique_lock lock(m_lock);
+		m_level = level;
+	}
+	void SetMaxHp(int32_t maxHp)
+	{
+		std::unique_lock lock(m_lock);
+		m_maxHp = maxHp;
+	}
 	void TakeDamage(int32_t dmg)
 	{
 		std::unique_lock lock(m_lock);

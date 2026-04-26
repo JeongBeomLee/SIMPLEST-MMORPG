@@ -14,6 +14,7 @@ public:
 	bool Connect(const char* ip, uint16_t port);
 	void Disconnect();
 	void SendPacket(const void* data, uint16_t size);
+	bool ConsumeLoginFail(uint8_t& outReason);
 
 private:
 	void RecvThread();
@@ -24,5 +25,7 @@ private:
 	std::thread m_recvThread;
 	RingBuffer m_recvBuffer;
 	std::atomic<bool> m_running;
+	std::atomic<bool> m_hasLoginFail{ false };
+	std::atomic<uint8_t> m_loginFailReason{ 0 };
 };
 

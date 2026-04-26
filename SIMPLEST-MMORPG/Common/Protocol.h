@@ -60,6 +60,14 @@ struct SC_LoginOk
 	int32_t hp, max_hp;
 };
 
+enum class LoginFailReason : uint8_t
+{
+	UNKNOWN = 0,
+	DUPLICATE_LOGIN = 1, // 같은 캐릭터 이미 접속 중
+	DB_ERROR = 2, // LoadPlayer/CreatePlayer 실패
+	SPAWN_FULL = 3, // 빈 타일 못 찾음
+};
+
 struct SC_LoginFail
 {
 	PacketHeader header;

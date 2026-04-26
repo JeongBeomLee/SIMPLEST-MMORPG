@@ -31,6 +31,7 @@ int main()
 
 	NetworkClient client;
 	std::wstring nameInput;
+	std::wstring errorMsg;
 	AppState state = AppState::MAIN_MENU;
 	
 	while (state != AppState::DISCONNECTED)
@@ -50,11 +51,12 @@ int main()
 
 			if (input.enterPressed && !nameInput.empty())
 			{
+				errorMsg.clear();
 				state = AppState::CONNECTING;
 				break;
 			}
 
-			renderer.RenderMainMenu(nameInput);
+			renderer.RenderMainMenu(nameInput, errorMsg);
 			break;
 		}
 		case AppState::CONNECTING:
@@ -86,6 +88,29 @@ int main()
 		}
 		case AppState::IN_GAME:
 		{
+			uint8_t reason = 0;
+			if (client.ConsumeLoginFail(reason))
+			{
+				client.Disconnect();
+				switch (static_cast<LoginFailReason>(reason))
+				{
+				case LoginFailReason::DUPLICATE_LOGIN:
+					errorMsg = L"This character is already connected.";
+					break;
+				case LoginFailReason::DB_ERROR:
+					errorMsg = L"This is a server database error.";
+					break;
+				case LoginFailReason::SPAWN_FULL:
+					errorMsg = L"The spawn location is full.";
+					break;
+				default:
+					errorMsg = L"Login failed.";
+					break;
+				}
+				state = AppState::MAIN_MENU;
+				break;
+			}
+
 			auto input = InputHandler::GetInstance().ProcessGameInput();
 			if (input.escPressed) 
 			{

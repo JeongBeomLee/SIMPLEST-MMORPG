@@ -2,9 +2,10 @@
 #include "Constants.h"
 #include <algorithm>
 
-Player::Player(ObjectID id, Session* session, const std::string& name)
+Player::Player(ObjectID id, Session* session, const std::string& name, int64_t dbId)
 	: GameObject(id, ObjectType::PLAYER)
 	, m_session(session)
+	, m_dbId(dbId)
 {
 	m_name = name;
 }
@@ -34,6 +35,12 @@ int32_t Player::GetLevelUpExp() const
 {
 	std::shared_lock lock(m_lock);
 	return 100 * (1 << (m_level - 1));
+}
+
+void Player::SetExp(int32_t exp)
+{
+	std::unique_lock lock(m_lock);
+	m_exp = exp;
 }
 
 void Player::Die()
