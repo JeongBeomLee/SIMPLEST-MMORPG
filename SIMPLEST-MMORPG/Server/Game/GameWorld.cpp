@@ -346,6 +346,43 @@ PlayerRow GameWorld::SnapshotPlayer(const Player& player)
 	return row;
 }
 
+void GameWorld::BroadcastChatGlobal(const SC_Chat& pkt)
+{
+	std::shared_lock lock(m_playersMutex);
+	for (const auto& [id, player] : m_players)
+	{
+		player->GetSession()->SendPacket(&pkt, sizeof(pkt));
+	}
+}
+
+void GameWorld::BroadcastChatView(Player* sender, const SC_Chat& pkt)
+{
+	Position p = sender->GetPos();
+	auto nearbyIds = m_sectorManager.GetNearbyObjects(p.x, p.y);
+
+	for (ObjectID oid : nearbyIds)
+	{
+		if (oid >= MONSTER_ID_OFFSET)
+		{
+			continue;
+		}
+
+		auto target = GetPlayer(oid);
+		if (!target)
+		{
+			continue;
+		}
+
+		Position tp = target->GetPos();
+		if (!ViewProcessor::IsInView(tp.x, tp.y, p.x, p.y))
+		{
+			continue;
+		}
+
+		target->GetSession()->SendPacket(&pkt, sizeof(pkt));
+	}
+}
+
 void GameWorld::BroadcastAttackEffect(ObjectID attackerId, int16_t cx, int16_t cy)
 {
 	SC_AttackEffect pkt;
@@ -518,6 +555,54 @@ void GameWorld::ProcessAttack(Session* session, const char* data)
 	BroadcastAttackEffect(player->GetId(), px, py);
 
 	player->OnAttackPerformed();
+}
+
+void GameWorld::ProcessChat(Session* session, const char* data)
+{
+	const CS_Chat* pkt = reinterpret_cast<const CS_Chat*>(data);
+
+	ObjectID id = session->GetId();
+	auto sender = GetPlayer(id);
+	if (!sender)
+	{
+		return;
+	}
+
+	if (!sender->CanChat())
+	{
+		return;
+	}
+	sender->OnChatPerformed();
+
+	// 메시지 길이 제한 + null 종결 보장
+	char safeMsg[128];
+	strncpy_s(safeMsg, sizeof(safeMsg), pkt->message, _TRUNCATE);
+	if (safeMsg[0] == '\0')
+	{
+		return;  // 빈 메시지 거부
+	}
+
+	// 응답 패킷 조립
+	SC_Chat outPkt;
+	outPkt.header.size = sizeof(outPkt);
+	outPkt.header.type = static_cast<uint16_t>(PacketType::SC_CHAT);
+	outPkt.sender_id = id;
+	outPkt.channel = pkt->channel;
+
+	std::string senderName = sender->GetName();
+	strncpy_s(outPkt.name, sizeof(outPkt.name), senderName.c_str(), _TRUNCATE);
+	strncpy_s(outPkt.message, sizeof(outPkt.message), safeMsg, _TRUNCATE);
+
+	if (static_cast<ChatChannel>(pkt->channel) == ChatChannel::GLOBAL)
+	{
+		BroadcastChatGlobal(outPkt);
+	}
+	else
+	{
+		BroadcastChatView(sender.get(), outPkt);
+	}
+
+	std::cout << "[Chat][" << (pkt->channel == 0 ? "VIEW" : "GLOBAL") << "] " << senderName << ": " << safeMsg << std::endl;
 }
 
 void GameWorld::OnLoginDBLoaded(int sessionId, const PlayerRow& row)

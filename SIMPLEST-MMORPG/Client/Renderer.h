@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Protocol.h"
 #include <Windows.h>
 #include <string>
 #include <deque>
@@ -16,7 +17,7 @@ public:
 
 	// 화면별 렌더링 (상태 머신이 호출)
 	void RenderMainMenu(const std::wstring& nameInput, const std::wstring& errorMsg = L"");
-	void RenderGame();
+	void RenderGame(bool chatMode, ChatChannel chatChannel, const std::wstring& chatBuffer);
 
 	// 로그/채팅 창에 한 줄 추가 (Thread-Safe)
 	void PushLog(const std::wstring& line, WORD color = (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY));
@@ -37,6 +38,7 @@ private:
 	void DrawViewport();
 	void DrawHUD();
 	void DrawLogBox();
+	void DrawChatInputBar(ChatChannel chatChannel, const std::wstring& chatBuffer);
 
 	// 별 비 효과
 	void InitStars();
@@ -57,7 +59,7 @@ private:
 		std::wstring text;
 		WORD color;
 	};
-	static constexpr size_t MAX_LOG_LINES = 15;
+	static constexpr size_t MAX_LOG_LINES = 14;
 	std::deque<LogLine> m_logLines;
 	mutable std::mutex m_logMutex;
 

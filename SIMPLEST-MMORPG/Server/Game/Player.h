@@ -35,8 +35,10 @@ public:
 	// 쿨다운
 	bool CanMove() const;
 	bool CanAttack() const;
+	bool CanChat() const;
 	void OnMoved();
 	void OnAttackPerformed();
+	void OnChatPerformed();
 
 private:
 	Session* const m_session;
@@ -45,6 +47,7 @@ private:
 
 	std::chrono::steady_clock::time_point m_lastMoveTime{};
 	std::chrono::steady_clock::time_point m_lastAttackTime{};
+	std::chrono::steady_clock::time_point m_lastChatTime{};
 
 	std::atomic<bool> m_regenActive{ false };
 };

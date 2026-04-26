@@ -416,7 +416,7 @@ void Renderer::RenderMainMenu(const std::wstring& nameInput, const std::wstring&
 	Flush();
 }
 
-void Renderer::RenderGame() 
+void Renderer::RenderGame(bool chatMode, ChatChannel chatChannel, const std::wstring& chatBuffer)
 {
 	if (!GameState::GetInstance().IsLoggedIn())
 	{
@@ -427,6 +427,12 @@ void Renderer::RenderGame()
 	DrawViewport();
 	DrawHUD();
 	DrawLogBox();
+
+	if (chatMode)
+	{
+		DrawChatInputBar(chatChannel, chatBuffer);
+	}
+
 	Flush();
 }
 
@@ -595,21 +601,43 @@ void Renderer::DrawLogBox()
 	// 로그 줄 출력
 	std::lock_guard<std::mutex> lock(m_logMutex);
 
-	int maxContentH = LOG_H - 2; // 테두리 제외
+	int maxContentH = LOG_H - 3;
 	int startRow = LOG_Y + 1;
 
-	int i = 0;
-	for (const auto& entry : m_logLines)
-	{
-		if (i >= maxContentH)
-		{
-			break;
-		}
+	size_t total = m_logLines.size();
+	size_t startIdx = (total > static_cast<size_t>(maxContentH)) ? total - maxContentH : 0;
 
+	int row = 0;
+	for (size_t i = startIdx; i < total; ++i)
+	{
+		const auto& entry = m_logLines[i];
 		int maxLen = LOG_W - 2;
 		std::wstring truncated = entry.text.substr(0, maxLen);
+		DrawString(LOG_X + 1, startRow + row, truncated.c_str(), entry.color);
+		++row;
+	}
+}
 
-		DrawString(LOG_X + 1, startRow + i, truncated.c_str(), entry.color);
-		++i;
+void Renderer::DrawChatInputBar(ChatChannel chatChannel, const std::wstring& chatBuffer)
+{
+	const wchar_t* prefix = (chatChannel == ChatChannel::GLOBAL) ? L"[GLOBAL] > " : L"[VIEW]   > ";
+
+	WORD color = (chatChannel == ChatChannel::GLOBAL)
+		? (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY)
+		: (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+
+	int barY = LOG_Y + LOG_H - 2;
+	int barX = LOG_X + 1;
+
+	DrawString(barX, barY, prefix, color);
+
+	int textX = barX + static_cast<int>(wcslen(prefix));
+	DrawString(textX, barY, chatBuffer.c_str(), color);
+
+	++m_frameCount;
+
+	if (m_frameCount % 30 < 20)
+	{
+		SetChar(textX + static_cast<int>(chatBuffer.size()), barY, L'_', color);
 	}
 }

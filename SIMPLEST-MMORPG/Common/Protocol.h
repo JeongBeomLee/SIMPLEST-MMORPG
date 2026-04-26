@@ -44,9 +44,16 @@ struct CS_Attack
 	PacketHeader header;
 };
 
+enum class ChatChannel : uint8_t
+{
+	VIEW = 0,
+	GLOBAL = 1,
+};
+
 struct CS_Chat
 {
 	PacketHeader header;
+	uint8_t channel;
 	char message[128];
 };
 
@@ -111,6 +118,7 @@ struct SC_Chat
 {
 	PacketHeader header;
 	uint32_t sender_id;
+	uint8_t channel;
 	char name[32];
 	char message[128];
 };

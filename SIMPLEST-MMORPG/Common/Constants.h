@@ -37,3 +37,4 @@ constexpr int MONSTER_AI_TICK_MS = 1000;
 constexpr int DB_SAVE_INTERVAL_MS = 60000;
 constexpr float HP_REGEN_RATE = 0.10f;
 constexpr float DEATH_EXP_PENALTY = 0.50f;
+constexpr int CHAT_COOLDOWN_MS = 500;

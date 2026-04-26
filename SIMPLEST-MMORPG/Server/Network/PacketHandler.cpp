@@ -30,8 +30,8 @@ void PacketHandler::HandlePacket(Session* session, const char* data, uint16_t si
 		world.ProcessAttack(session, data);
 		break;
 	case PacketType::CS_CHAT:
-		std::cout << "[Session " << session->GetId() << "] CHAT packet received" << std::endl;
-		// TODO: GameWorld::ProcessChat(session, data);
+		if (size != sizeof(CS_Chat)) return;
+		world.ProcessChat(session, data);
 		break;
 	default:
 		std::cout << "[Session " << session->GetId() << "] Unknown packet type: " << header->type << std::endl;

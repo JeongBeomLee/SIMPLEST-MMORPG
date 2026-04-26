@@ -55,6 +55,52 @@ InputHandler::MenuInputResult InputHandler::ProcessMainMenuInput(std::wstring& n
 	return result;
 }
 
+InputHandler::ChatInputResult InputHandler::ProcessChatInput(std::wstring& message)
+{
+	ChatInputResult result;
+	while (_kbhit())
+	{
+		int ch = _getch();
+
+		if (ch == 27)  // ESC
+		{
+			result.cancel = true;
+			break;
+		}
+
+		if (ch == 13)  // Enter -> 전송
+		{
+			result.submit = true;
+			break;
+		}
+
+		if (ch == 9)  // Tab -> 채널 토글
+		{
+			result.channelToggled = true;
+			continue;
+		}
+
+		if (ch == 8)  // Backspace
+		{
+			if (!message.empty()) message.pop_back();
+			continue;
+		}
+
+		if (ch == 0 || ch == 0xE0)  // 화살표 등 무시
+		{
+			_getch();
+			continue;
+		}
+
+		// 영문/숫자/공백/구두점 허용, 길이 제한
+		if (message.size() < 100 && ch >= 32 && ch < 127)
+		{
+			message.push_back(static_cast<wchar_t>(ch));
+		}
+	}
+	return result;
+}
+
 InputHandler::GameInputResult InputHandler::ProcessGameInput()
 {
 	GameInputResult result;
@@ -103,6 +149,12 @@ InputHandler::GameInputResult InputHandler::ProcessGameInput()
 		if (ch == ' ' && CheckAttackCooldown())
 		{
 			result.attackPressed = true;
+		}
+
+		if (ch == 13)
+		{
+			// Enter -> 채팅 모드 진입
+			result.chatModeEntered = true;
 		}
 	}
 	return result;

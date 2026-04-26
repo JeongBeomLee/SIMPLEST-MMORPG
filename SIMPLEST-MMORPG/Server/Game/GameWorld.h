@@ -33,6 +33,7 @@ public:
 	void ProcessMove(Session* session, const char* data);
 	void ProcessDisconnect(Session* session);
 	void ProcessAttack(Session* session, const char* data);
+	void ProcessChat(Session* session, const char* data);
 
 	// DB
 	void OnLoginDBLoaded(int sessionId, const PlayerRow& row);
@@ -81,6 +82,9 @@ private:
 	bool TryClaimDbId(int64_t dbId);
 	void ReleaseDbId(int64_t dbId);
 	PlayerRow SnapshotPlayer(const Player& player);
+
+	void BroadcastChatGlobal(const SC_Chat& pkt);
+	void BroadcastChatView(Player* sender, const SC_Chat& pkt);
 
 private:
 	Map m_map;

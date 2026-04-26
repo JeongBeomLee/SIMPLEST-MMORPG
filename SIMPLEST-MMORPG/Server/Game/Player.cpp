@@ -85,6 +85,14 @@ bool Player::CanAttack() const
 	return diff >= ATTACK_COOLDOWN_MS;
 }
 
+bool Player::CanChat() const
+{
+	std::shared_lock lock(m_lock);
+	auto now = std::chrono::steady_clock::now();
+	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastChatTime).count();
+	return diff >= CHAT_COOLDOWN_MS;
+}
+
 void Player::OnMoved()
 {
 	std::unique_lock lock(m_lock);
@@ -95,4 +103,10 @@ void Player::OnAttackPerformed()
 {
 	std::unique_lock lock(m_lock);
 	m_lastAttackTime = std::chrono::steady_clock::now();
+}
+
+void Player::OnChatPerformed()
+{
+	std::unique_lock lock(m_lock);
+	m_lastChatTime = std::chrono::steady_clock::now();
 }

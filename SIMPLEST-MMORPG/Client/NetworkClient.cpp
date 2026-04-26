@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "GameState.h"
 #include "Renderer.h"
+#include <WS2tcpip.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -50,6 +51,9 @@ bool NetworkClient::Connect(const char* ip, uint16_t port)
 		m_socket = INVALID_SOCKET;
 		return false;
 	}
+
+	BOOL nodelay = TRUE;
+	setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&nodelay), sizeof(nodelay));
 
 	// 5. 수신 스레드 시작
 	m_running = true;
@@ -237,6 +241,20 @@ void NetworkClient::OnPacket(const char* data, uint16_t size)
 			me.level = p->level;
 			GameState::GetInstance().SetMyPlayer(me);
 		}
+		break;
+	}
+	case PacketType::SC_CHAT:
+	{
+		const SC_Chat* p = reinterpret_cast<const SC_Chat*>(data);
+
+		std::string text = std::string(p->name) + ": " + p->message;
+		std::wstring wtext = LogInternal::AsciiToWString(text);
+
+		WORD color = (p->channel == static_cast<uint8_t>(ChatChannel::GLOBAL))
+			? (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY)
+			: (FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+
+		Renderer::GetInstance().PushLog(wtext, color);
 		break;
 	}
 	case PacketType::SC_COMBAT_MESSAGE:

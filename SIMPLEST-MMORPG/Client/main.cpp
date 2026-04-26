@@ -32,7 +32,9 @@ int main()
 	NetworkClient client;
 	std::wstring nameInput;
 	std::wstring errorMsg;
+	std::wstring chatBuffer;
 	AppState state = AppState::MAIN_MENU;
+	ChatChannel chatChannel = ChatChannel::VIEW;
 	
 	while (state != AppState::DISCONNECTED)
 	{
@@ -111,57 +113,103 @@ int main()
 				break;
 			}
 
-			auto input = InputHandler::GetInstance().ProcessGameInput();
-			if (input.escPressed) 
+			auto& input = InputHandler::GetInstance();
+			if (input.IsChatMode())
 			{
-				state = AppState::DISCONNECTED;
-				break;
-			}
+				auto chatInput = input.ProcessChatInput(chatBuffer);
 
-			if (input.hasMove)
-			{
-				GameState& gameState = GameState::GetInstance();
-				MyPlayer me = gameState.GetMyPlayer();
-				int16_t newX = me.x + DX[static_cast<int>(input.moveDir)];
-				int16_t newY = me.y + DY[static_cast<int>(input.moveDir)];
-
-				bool canMove = gameState.GetMap().IsWalkable(newX, newY);
-				if (canMove)
+				if (chatInput.cancel)
 				{
-					auto objects = gameState.GetAllObjects();
-					for (const auto& obj : objects)
+					chatBuffer.clear();
+					input.ExitChatMode();
+				}
+				else if (chatInput.channelToggled)
+				{
+					chatChannel = (chatChannel == ChatChannel::VIEW)
+						? ChatChannel::GLOBAL : ChatChannel::VIEW;
+				}
+				else if (chatInput.submit)
+				{
+					if (!chatBuffer.empty())
 					{
-						if (obj.x == newX && obj.y == newY)
+						CS_Chat pkt;
+						pkt.header.size = sizeof(pkt);
+						pkt.header.type = static_cast<uint16_t>(PacketType::CS_CHAT);
+						pkt.channel = static_cast<uint8_t>(chatChannel);
+
+						std::string msg;
+						msg.reserve(chatBuffer.size());
+						for (wchar_t wc : chatBuffer)
 						{
-							canMove = false;
-							break;
+							msg.push_back(static_cast<char>(wc));
 						}
+						strncpy_s(pkt.message, sizeof(pkt.message), msg.c_str(), _TRUNCATE);
+
+						client.SendPacket(&pkt, sizeof(pkt));
+					}
+
+					chatBuffer.clear();
+					input.ExitChatMode();
+				}
+			}
+			else
+			{
+				auto gameInput = input.ProcessGameInput();
+				if (gameInput.escPressed)
+				{
+					state = AppState::DISCONNECTED;
+					break;
+				}
+				if (gameInput.chatModeEntered)
+				{
+					input.EnterChatMode();
+				}
+				
+				if (gameInput.hasMove)
+				{
+					GameState& gameState = GameState::GetInstance();
+					MyPlayer me = gameState.GetMyPlayer();
+					int16_t newX = me.x + DX[static_cast<int>(gameInput.moveDir)];
+					int16_t newY = me.y + DY[static_cast<int>(gameInput.moveDir)];
+
+					bool canMove = gameState.GetMap().IsWalkable(newX, newY);
+					if (canMove)
+					{
+						auto objects = gameState.GetAllObjects();
+						for (const auto& obj : objects)
+						{
+							if (obj.x == newX && obj.y == newY)
+							{
+								canMove = false;
+								break;
+							}
+						}
+					}
+
+					if (canMove)
+					{
+						// 서버 전송
+						CS_Move mp;
+						mp.header.size = sizeof(mp);
+						mp.header.type = static_cast<uint16_t>(PacketType::CS_MOVE);
+						mp.direction = static_cast<uint8_t>(gameInput.moveDir);
+						client.SendPacket(&mp, sizeof(mp));
+
+						// 로컬 예측
+						gameState.MoveMyPlayer(newX, newY);
 					}
 				}
 
-				if (canMove)
+				if (gameInput.attackPressed)
 				{
-					// 서버 전송
-					CS_Move mp;
-					mp.header.size = sizeof(mp);
-					mp.header.type = static_cast<uint16_t>(PacketType::CS_MOVE);
-					mp.direction = static_cast<uint8_t>(input.moveDir);
-					client.SendPacket(&mp, sizeof(mp));
-
-					// 로컬 예측
-					gameState.MoveMyPlayer(newX, newY);
+					CS_Attack atk;
+					atk.header.size = sizeof(atk);
+					atk.header.type = static_cast<uint16_t>(PacketType::CS_ATTACK);
+					client.SendPacket(&atk, sizeof(atk));
 				}
 			}
-			
-			if (input.attackPressed)
-			{
-				CS_Attack atk;
-				atk.header.size = sizeof(atk);
-				atk.header.type = static_cast<uint16_t>(PacketType::CS_ATTACK);
-				client.SendPacket(&atk, sizeof(atk));
-			}
 
-			renderer.RenderGame();
+			renderer.RenderGame(input.IsChatMode(), chatChannel, chatBuffer);
 			break;
 		}
 		}

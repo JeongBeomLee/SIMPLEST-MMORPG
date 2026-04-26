@@ -1,6 +1,7 @@
 ﻿#include "Session.h"
 #include "Protocol.h"
 #include "PacketHandler.h"
+#include <WS2tcpip.h>
 #include <cstring>
 
 Session::Session()
@@ -25,6 +26,10 @@ void Session::Init(int id, SOCKET socket)
 
 	ZeroMemory(&m_recvOv, sizeof(m_recvOv));
 	ZeroMemory(&m_sendOv, sizeof(m_sendOv));
+
+	// TCP_NODELAY — Nagle 비활성화로 작은 패킷 즉시 전송
+	BOOL nodelay = TRUE;
+	setsockopt(m_socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&nodelay), sizeof(nodelay));
 }
 
 void Session::Close()
