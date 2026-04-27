@@ -63,7 +63,7 @@ int main()
 		}
 		case AppState::CONNECTING:
 		{
-			if (!client.Connect("127.0.0.1", SERVER_PORT))
+			if (!client.Connect(SERVER_IP, SERVER_PORT))
 			{
 				state = AppState::MAIN_MENU;
 				break;

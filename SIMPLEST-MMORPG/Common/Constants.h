@@ -1,7 +1,8 @@
 ﻿#pragma once
 #include <cstdint>
 
-// 서버 포트
+// 서버 IP/포트
+constexpr char SERVER_IP[] = "192.168.219.120";
 constexpr uint16_t SERVER_PORT = 9000;
 
 // 맵 관련
@@ -29,7 +30,7 @@ constexpr int MAX_MONSTERS = 200000;
 constexpr uint32_t MONSTER_ID_OFFSET = 1000000;
 
 // 타이머 관련
-constexpr int MOVE_COOLDOWN_MS = 50;
+constexpr int MOVE_COOLDOWN_MS = 1000;
 constexpr int ATTACK_COOLDOWN_MS = 1000;
 constexpr int HP_REGEN_INTERVAL_MS = 5000;
 constexpr int MONSTER_RESPAWN_MS = 30000;

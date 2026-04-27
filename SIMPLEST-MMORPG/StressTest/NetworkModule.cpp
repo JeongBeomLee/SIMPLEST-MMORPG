@@ -320,7 +320,7 @@ static void TryAddClient()
 	ZeroMemory(&serverAddr, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port   = htons(SERVER_PORT);
-	inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr);
+	inet_pton(AF_INET, SERVER_IP, &serverAddr.sin_addr);
 
 	int result = WSAConnect(g_clients[idx].socket, (sockaddr*)&serverAddr,
 	                        sizeof(serverAddr), NULL, NULL, NULL, NULL);
