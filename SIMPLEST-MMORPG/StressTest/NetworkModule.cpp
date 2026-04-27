@@ -23,7 +23,7 @@ using namespace std::chrono;
 // 상수
 // ============================================================
 static constexpr int MAX_TEST       = 14500;            // 동접 목표
-static constexpr int MAX_CLIENTS    = MAX_TEST * 1.5;  // 여유
+static constexpr int MAX_CLIENTS    = MAX_TEST * (const int)1.5;  // 여유
 static constexpr int MAX_BUFF_SIZE  = 1024;            // recv 임시 버퍼
 static constexpr int RECV_ACCUM_CAP = 2048;            // 누적 버퍼
 static constexpr int INVALID_ID     = -1;
