@@ -2,7 +2,7 @@
 
 IOCP 기반 텍스트 MMORPG 서버 + 콘솔 클라이언트 + 부하 측정 도구.
 
-C++20, Windows, Visual Studio 2022 환경에서 구현. 단일 서버에서 *7000+ 동시 접속**을 처리하며, 200K 몬스터 + 비동기 DB 영속화 + 채팅 + 시야 기반 broadcast를 지원합니다.
+C++20, Windows, Visual Studio 2022 환경에서 구현. 단일 서버에서 **7000+ 동시 접속**을 처리하며, 200K 몬스터 + 비동기 DB 영속화 + 채팅 + 시야 기반 broadcast를 지원합니다.
 
 > IOCP MMORPG 서버 학습 목적 프로젝트
 
