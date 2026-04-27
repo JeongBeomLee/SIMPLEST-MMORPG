@@ -1,70 +1,96 @@
 ﻿-- ============================================
 -- monster_spawn.lua
--- 몬스터 배치 정의
+-- 몬스터 자동 생성 스크립트
 -- ============================================
 
-function generate_grid_spawns(sx, sy, cx, cy, spacing)
-	local result = {}
-	for dy = 0, cy - 1 do
-		for dx = 0, cx - 1 do
-			table.insert(result, {sx + dx * spacing, sy + dy * spacing})
-		end
-	end
-	return result
+math.randomseed(42)
+
+local MAP_W   = 2000
+local MAP_H   = 2000
+local CELLS_X = 400
+local CELLS_Y = 500
+local CELL_W  = MAP_W / CELLS_X   -- 5
+local CELL_H  = MAP_H / CELLS_Y   -- 4
+
+-- Pawn 60%, Knight 20%, Rook 12%, Bishop 7%, Queen 1%
+local function pick_type()
+    local r = math.random(1, 100)
+    if     r <= 60 then return "Pawn"
+    elseif r <= 80 then return "Knight"
+    elseif r <= 92 then return "Rook"
+    elseif r <= 99 then return "Bishop"
+    else                return "Queen" end
+end
+
+local pawn_spawns   = {}
+local knight_spawns = {}
+local rook_spawns   = {}
+local bishop_spawns = {}
+local queen_spawns  = {}
+
+for cy = 0, CELLS_Y - 1 do
+    local y_min = cy * CELL_H
+    local y_max = (cy + 1) * CELL_H - 1
+    for cx = 0, CELLS_X - 1 do
+        local x_min = cx * CELL_W
+        local x_max = (cx + 1) * CELL_W - 1
+
+        local x = math.random(x_min, x_max)
+        local y = math.random(y_min, y_max)
+
+        local t = pick_type()
+        local pos = { x, y }
+        if     t == "Pawn"   then table.insert(pawn_spawns,   pos)
+        elseif t == "Knight" then table.insert(knight_spawns, pos)
+        elseif t == "Rook"   then table.insert(rook_spawns,   pos)
+        elseif t == "Bishop" then table.insert(bishop_spawns, pos)
+        else                      table.insert(queen_spawns,  pos)
+        end
+    end
 end
 
 -- ============================================
--- 몬스터 종류별 배치
+-- 몬스터 종류별 정의
 -- ============================================
-
 monster_spawns = {
-    -- Pawn: 평화로운 잡몹, 초보자 영역
     {
-        name = "Pawn",
-        level = 1,
-        hp = 50,
+        name     = "Pawn",
+        level    = 2,
+        hp       = 50,
         behavior = "peace",
         movement = "roaming",
-        spawns = generate_grid_spawns(30, 30, 5, 5, 8),   -- 25 마리
+        spawns   = pawn_spawns,    -- ~120,000
     },
-
-    -- Knight: 추격형, 중간 영역
     {
-        name = "Knight",
-        level = 3,
-        hp = 120,
+        name     = "Knight",
+        level    = 5,
+        hp       = 120,
         behavior = "agro",
         movement = "roaming",
-        spawns = generate_grid_spawns(100, 100, 5, 5, 10), -- 25 마리
+        spawns   = knight_spawns,  -- ~40,000
     },
-
-    -- Rook: 보초병, 고정
     {
-        name = "Rook",
-        level = 5,
-        hp = 250,
-        behavior = "agro",
+        name     = "Rook",
+        level    = 8,
+        hp       = 1000,
+        behavior = "peace",
         movement = "fixed",
-        spawns = generate_grid_spawns(200, 200, 4, 4, 5),  -- 16 마리
+        spawns   = rook_spawns,    -- ~24,000
     },
-
-    -- Bishop: 강력 추격, 깊은 지역
     {
-        name = "Bishop",
-        level = 8,
-        hp = 500,
+        name     = "Bishop",
+        level    = 8,
+        hp       = 500,
         behavior = "agro",
         movement = "roaming",
-        spawns = { {500, 500}, {520, 500}, {510, 520} },   -- 3 마리
+        spawns   = bishop_spawns,  -- ~14,000
     },
-
-    -- Queen: 보스 (몇 마리만)
     {
-        name = "Queen",
-        level = 10,
-        hp = 1000,
+        name     = "Queen",
+        level    = 10,
+        hp       = 1000,
         behavior = "agro",
-        movement = "fixed",
-        spawns = { {800, 800}, {1500, 1500} },             -- 2 마리
+        movement = "roaming",
+        spawns   = queen_spawns,   -- ~2,000
     },
 }
