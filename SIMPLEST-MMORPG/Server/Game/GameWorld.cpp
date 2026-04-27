@@ -488,7 +488,6 @@ void GameWorld::ProcessTeleport(Session* session, const char* /*data*/)
 	// 기존 점유 해제
 	m_sectorManager.RemoveObject(id, oldX, oldY);
 
-	// 랜덤 좌표 생성 (맵 가장자리 회피 + 빈 타일 spiral search)
 	thread_local std::mt19937 rng(std::random_device{}());
 	std::uniform_int_distribution<int16_t> distX(10, MAP_WIDTH - 10);
 	std::uniform_int_distribution<int16_t> distY(10, MAP_HEIGHT - 10);
@@ -780,28 +779,28 @@ void GameWorld::SpawnMonsters()
 {
 	auto spawns = LuaManager::GetInstance().LoadMonsterSpawns("Scripts/monster_spawn.lua");
 
-    m_monsters.reserve(spawns.size());
+	m_monsters.reserve(spawns.size());
 
-    for (size_t i = 0; i < spawns.size(); ++i)
-    {
-        const auto& data = spawns[i];
-        ObjectID id = MONSTER_ID_OFFSET + static_cast<ObjectID>(i);
+	for (size_t i = 0; i < spawns.size(); ++i)
+	{
+		const auto& data = spawns[i];
+		ObjectID id = MONSTER_ID_OFFSET + static_cast<ObjectID>(m_monsters.size());
 
-        int16_t spawnX, spawnY;
-        if (!m_sectorManager.AddObject(id, data.x, data.y, m_map, spawnX, spawnY))
-        {
-            LOG_WARN("Failed to spawn " << data.name << " at (" << data.x << "," << data.y << ")");
-            continue;
-        }
+		int16_t spawnX, spawnY;
+		if (!m_sectorManager.AddObject(id, data.x, data.y, m_map, spawnX, spawnY))
+		{
+			// 점유 충돌 등 — 무시하고 다음으로
+			continue;
+		}
 
-        auto monster = std::make_unique<Monster>(
-            id, data.name, data.level, data.maxHp,
-            data.behavior, data.movement, data.x, data.y
-        );
+		auto monster = std::make_unique<Monster>(
+			id, data.name, data.level, data.maxHp,
+			data.behavior, data.movement, spawnX, spawnY
+		);
 		monster->SetPos(spawnX, spawnY);
 
-        m_monsters.push_back(std::move(monster));
-    }
+		m_monsters.push_back(std::move(monster));
+	}
 
 	LOG_INFO("Spawned " << m_monsters.size() << " monsters");
 }

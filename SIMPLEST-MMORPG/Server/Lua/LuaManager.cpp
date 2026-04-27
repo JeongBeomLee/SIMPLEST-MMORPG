@@ -14,7 +14,7 @@ std::vector<MonsterSpawnData> LuaManager::LoadMonsterSpawns(const char* filePath
 	std::vector<MonsterSpawnData> result;
 
 	sol::state lua;
-	lua.open_libraries(sol::lib::base, sol::lib::table);
+	lua.open_libraries(sol::lib::base, sol::lib::table, sol::lib::math);
 
 	try
 	{

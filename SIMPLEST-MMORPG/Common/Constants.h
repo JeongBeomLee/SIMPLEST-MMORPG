@@ -24,7 +24,7 @@ constexpr int HALF_AGRO = AGRO_RANGE / 2;
 constexpr int ROAMING_RANGE = 20;
 
 // 최대 동접 및 몬스터 수 관련
-constexpr int MAX_PLAYERS = 3000;
+constexpr int MAX_PLAYERS = 15000;
 constexpr int MAX_MONSTERS = 200000;
 constexpr uint32_t MONSTER_ID_OFFSET = 1000000;
 

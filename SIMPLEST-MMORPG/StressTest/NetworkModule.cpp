@@ -22,14 +22,15 @@ using namespace std::chrono;
 // ============================================================
 // 상수
 // ============================================================
-static constexpr int MAX_TEST       = 1000;            // 동접 목표
-static constexpr int MAX_CLIENTS    = MAX_TEST + 500;  // 여유
+static constexpr int MAX_TEST       = 14500;            // 동접 목표
+static constexpr int MAX_CLIENTS    = MAX_TEST * 1.5;  // 여유
 static constexpr int MAX_BUFF_SIZE  = 1024;            // recv 임시 버퍼
 static constexpr int RECV_ACCUM_CAP = 2048;            // 누적 버퍼
 static constexpr int INVALID_ID     = -1;
 static constexpr int ACCEPT_DELAY   = 50;              // ms 새 봇 추가 간격
-static constexpr int DELAY_LIMIT    = 100;             // ms 한계 (이상이면 신규 접속 stop)
-static constexpr int DELAY_LIMIT2   = 150;             // ms 임계 (이상이면 봇 줄임)
+static constexpr int DELAY_LIMIT    = 100;             // ms 이상이면 ramp 속도 1/10
+static constexpr int DELAY_LIMIT2   = 150;             // ms 이상이면 신규 접속 일시 정지
+static constexpr int DELAY_LIMIT3   = 500;             // ms 이상이면 영구 halt (한계 도달, 측정 모드)
 
 enum OPTYPE { OP_RECV, OP_SEND };
 
@@ -140,6 +141,12 @@ static void ProcessPacket(int ci, const unsigned char* packet)
 			client_map[p->my_id] = ci;
 		}
 		active_clients++;
+
+		// 분산을 위해 즉시 랜덤 텔레포트
+		CS_Teleport tp_pkt;
+		tp_pkt.header.size = sizeof(tp_pkt);
+		tp_pkt.header.type = static_cast<uint16_t>(PacketType::CS_TELEPORT);
+		SendPacket(ci, &tp_pkt, sizeof(tp_pkt));
 		break;
 	}
 
@@ -259,7 +266,9 @@ static void TryAddClient()
 	static int  delay_multiplier = 1;
 	static int  max_limit        = MAX_TEST;
 	static bool increasing       = true;
+	static bool halted           = false;  // DELAY_LIMIT3 도달 시 영구 정지
 
+	if (halted) return;
 	if (active_clients >= MAX_TEST) return;
 	if (num_connections >= MAX_CLIENTS) return;
 
@@ -268,6 +277,13 @@ static void TryAddClient()
 	if (ACCEPT_DELAY * delay_multiplier > durMs) return;
 
 	int t_delay = global_delay;
+
+	// 영구 halt — 진짜 한계 도달, 더 이상 변화 없이 측정 유지
+	if (DELAY_LIMIT3 < t_delay)
+	{
+		halted = true;
+		return;
+	}
 
 	// 한계 초과 → 봇 줄임
 	if (DELAY_LIMIT2 < t_delay)

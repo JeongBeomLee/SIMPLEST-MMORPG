@@ -53,7 +53,7 @@ private:
 	std::atomic<bool> m_running{ false };
 	std::thread m_thread;
 
-	TimerOverlappedPool m_pool{ 4096 };
+	TimerOverlappedPool m_pool{ 65536 };
 	std::priority_queue<TimerEvent, std::vector<TimerEvent>, std::greater<TimerEvent>> m_queue;
 	std::mutex m_mutex;
 	std::condition_variable m_cv;
