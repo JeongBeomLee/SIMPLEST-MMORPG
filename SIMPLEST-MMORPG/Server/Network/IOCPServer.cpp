@@ -92,80 +92,92 @@ void IOCPServer::WorkerThread()
 {
 	while (m_running)
 	{
-		DWORD bytes = 0;
-		ULONG_PTR key = 0;
-		OVERLAPPED* overlapped = nullptr;
 
-		BOOL ret = GetQueuedCompletionStatus(
-			m_hIOCP,
-			&bytes,
-			&key,
-			&overlapped,
-			INFINITE	// 완료 통지 올 때까지 대기
-		);
-
-		// 종료 중이면 즉시 탈출
-		if (!m_running)
+		try
 		{
-			break;
-		}
+			DWORD bytes = 0;
+			ULONG_PTR key = 0;
+			OVERLAPPED* overlapped = nullptr;
 
-		// 종료 신호 (Shutdown에서 PostQCS로 보냄)
-		if (overlapped == nullptr)
-		{
-			break;
-		}
+			BOOL ret = GetQueuedCompletionStatus(
+				m_hIOCP,
+				&bytes,
+				&key,
+				&overlapped,
+				INFINITE	// 완료 통지 올 때까지 대기
+			);
 
-		OverlappedEx* ovEx = reinterpret_cast<OverlappedEx*>(overlapped);
-
-		// GQCS 실패 또는 연결 끊김
-		if (ret == FALSE || (bytes == 0 
-			&& ovEx->ioType != IOType::ACCEPT 
-			&& ovEx->ioType != IOType::TIMER
-			&& ovEx->ioType != IOType::DB_COMPLETE))
-		{
-			Session* session = m_sessions[key];
-			if (session != nullptr)
+			// 종료 중이면 즉시 탈출
+			if (!m_running)
 			{
-				DisconnectSession(session);
+				break;
 			}
-			continue;
-		}
 
-		switch (ovEx->ioType)
-		{
-		case IOType::ACCEPT:
-			OnAccept(ovEx);
-			break;
-		case IOType::RECV:
-			OnRecv(m_sessions[key], bytes);
-			break;
-		case IOType::SEND:
-			OnSend(m_sessions[key]);
-			break;
-		case IOType::TIMER:
-		{
-			TimerOverlapped* tov = reinterpret_cast<TimerOverlapped*>(ovEx);
-			GameWorld::GetInstance().HandleTimerEvent(tov->type, tov->targetId);
-			TimerManager::GetInstance().ReleaseTimerOverlapped(tov);
-			break;
-		}
-		case IOType::DB_COMPLETE:
-		{
-			std::unique_ptr<DBCompletionOverlapped> dbov(reinterpret_cast<DBCompletionOverlapped*>(ovEx));
-			if (dbov->callback)
+			// 종료 신호 (Shutdown에서 PostQCS로 보냄)
+			if (overlapped == nullptr)
 			{
-				try 
-				{
-					dbov->callback();
-				}
-				catch (const std::exception& e)
-				{
-					LOG_ERROR("[IOCP] DB callback threw: " << e.what());
-				}
+				break;
 			}
-			break;
+
+			OverlappedEx* ovEx = reinterpret_cast<OverlappedEx*>(overlapped);
+
+			// GQCS 실패 또는 연결 끊김
+			if (ret == FALSE || (bytes == 0
+				&& ovEx->ioType != IOType::ACCEPT
+				&& ovEx->ioType != IOType::TIMER
+				&& ovEx->ioType != IOType::DB_COMPLETE))
+			{
+				Session* session = m_sessions[key];
+				if (session != nullptr)
+				{
+					DisconnectSession(session);
+				}
+				continue;
+			}
+
+			switch (ovEx->ioType)
+			{
+			case IOType::ACCEPT:
+				OnAccept(ovEx);
+				break;
+			case IOType::RECV:
+				OnRecv(m_sessions[key], bytes);
+				break;
+			case IOType::SEND:
+				OnSend(m_sessions[key]);
+				break;
+			case IOType::TIMER:
+			{
+				TimerOverlapped* tov = reinterpret_cast<TimerOverlapped*>(ovEx);
+				GameWorld::GetInstance().HandleTimerEvent(tov->type, tov->targetId);
+				TimerManager::GetInstance().ReleaseTimerOverlapped(tov);
+				break;
+			}
+			case IOType::DB_COMPLETE:
+			{
+				std::unique_ptr<DBCompletionOverlapped> dbov(reinterpret_cast<DBCompletionOverlapped*>(ovEx));
+				if (dbov->callback)
+				{
+					try
+					{
+						dbov->callback();
+					}
+					catch (const std::exception& e)
+					{
+						LOG_ERROR("[IOCP] DB callback threw: " << e.what());
+					}
+				}
+				break;
+			}
+			}
 		}
+		catch (const std::exception& e)
+		{
+			LOG_ERROR("[IOCP] Worker exception: " << e.what());
+		}
+		catch (...)
+		{
+			LOG_ERROR("[IOCP] Worker unknown exception");
 		}
 	}
 }
