@@ -6,6 +6,8 @@ C++20, Windows, Visual Studio 2022 환경에서 구현. 단일 서버에서 *700
 
 > IOCP MMORPG 서버 학습 목적 프로젝트
 
+![InGame](Images/InGame.png)
+
 ---
 
 ## 기술 스택
@@ -268,7 +270,6 @@ session->SendPacket(&ack);
 int64_t round_trip = NowMs() - pkt->move_time;
 ```
 
-EWMA 비슷한 ±1 step으로 노이즈 흡수, 적응형 부하 조절의 트리거.
 
 ---
 
@@ -353,11 +354,15 @@ SIMPLEST-MMORPG.sln 열기 → Release | x64 → 솔루션 빌드
   - 측정 알고리즘 한계 — 진짜 서버 한도 측정엔 동급 이상 부하 PC 또는 다중 부하 PC 필요
 ```
 
-### 메모리 사용량 (서버, 6000+ 동접 시)
+![StressTest 8K](Images/StressTest8K.png)
+
+> StressTest 시각화 — 봇 약 8000명이 2000×2000 맵 전체에 분산된 모습. 좌상단에 active 동접 + 측정된 round-trip delay 표시.
+
+### 메모리 사용량 (서버, 7000+ 동접 시)
 
 - 200K Monster 객체: ~30MB
 - Tile occupation map: 16MB
-- Session × 6000: ~75MB
+- Session × 7000: ~75MB
 - 기타: ~30MB
 - **합계 약 150~200MB**
 
