@@ -150,6 +150,20 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Lua\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
+  <PropertyGroup>
+    <LocalDebuggerWorkingDirectory>$(OutDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <ItemGroup>
+    <RuntimeDll Include="$(SolutionDir)Lua\Lib\lua54.dll" />
+    <RuntimeData Include="$(SolutionDir)Data\**" />
+    <RuntimeScripts Include="$(SolutionDir)Scripts\**" />
+  </ItemGroup>
+  <Target Name="CopyRuntimeFiles" AfterTargets="Build">
+    <Copy SourceFiles="@(RuntimeDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(RuntimeData)" DestinationFiles="@(RuntimeData->'$(OutDir)Data\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(RuntimeScripts)" DestinationFiles="@(RuntimeScripts->'$(OutDir)Scripts\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
   <ItemGroup>
     <ClCompile Include="..\Common\Map.cpp" />
     <ClCompile Include="DB\DBConnection.cpp" />

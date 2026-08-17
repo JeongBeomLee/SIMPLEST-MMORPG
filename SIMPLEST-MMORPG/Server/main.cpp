@@ -13,7 +13,7 @@ int main()
 
 	// IOCP 서버 시작
 	IOCPServer& server = IOCPServer::GetInstance();
-	if (!server.Init(SERVER_PORT))
+	if (!server.Init(SERVER_PORT,3))
 	{
 		LOG_ERROR("Server init failed");
 		return -1;

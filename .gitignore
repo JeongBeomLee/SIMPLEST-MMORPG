@@ -114,3 +114,10 @@ x86/
 ### Project
 # Local docs/reports (not tracked)
 SIMPLEST-MMORPG/Docs/
+
+# Runtime logs
+*.log
+
+# Lua binaries are required to build/run — keep them tracked
+!SIMPLEST-MMORPG/Lua/Lib/lua54.lib
+!SIMPLEST-MMORPG/Lua/Lib/lua54.dll

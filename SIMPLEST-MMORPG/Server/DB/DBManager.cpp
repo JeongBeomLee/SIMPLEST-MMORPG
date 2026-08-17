@@ -16,15 +16,15 @@ bool DBManager::Init(HANDLE iocp,
 {
 	m_iocp = iocp;
 
+	// DB 연결 실패 시에도 서버는 뜬다: DBConnection이 in-memory fallback으로 동작 (영속화 없음)
 	if (!m_loginDB.Connect(server, database, user, password))
 	{
-		LOG_ERROR("[DBManager] login DB connect failed");
-		return false;
+		LOG_WARN("[DBManager] DB unavailable -> in-memory mode (progress is NOT persisted)");
 	}
-	if (!m_saveDB.Connect(server, database, user, password))
+	else if (!m_saveDB.Connect(server, database, user, password))
 	{
-		LOG_ERROR("[DBManager] save DB connect failed");
-		return false;
+		LOG_WARN("[DBManager] save DB connect failed -> in-memory mode (progress is NOT persisted)");
+		m_loginDB.Disconnect();
 	}
 
 	m_running = true;

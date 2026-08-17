@@ -2,6 +2,17 @@
 #include "../Logger.h"
 #include <iostream>
 #include <sstream>
+#include <mutex>
+#include <unordered_map>
+
+// DB 미연결 시 in-memory fallback (프로세스 수명 동안만 유지, 재시작 시 초기화)
+// ponytail: 로컬에 SQL Server 없어도 실행되게 하는 최소 구현. 영속화 필요하면 실제 DB 연결.
+namespace
+{
+	std::mutex g_memMutex;
+	std::unordered_map<std::string, PlayerRow> g_memRows;   // name -> row
+	int64_t g_memNextId = 0;
+}
 
 DBConnection::DBConnection()
 {
@@ -106,7 +117,14 @@ bool DBConnection::LoadPlayerByName(const std::string& name, PlayerRow& outRow, 
 	outFound = false;
 	if (m_conn == SQL_NULL_HDBC)
 	{
-		return false;
+		std::lock_guard lock(g_memMutex);
+		auto it = g_memRows.find(name);
+		if (it != g_memRows.end())
+		{
+			outRow = it->second;
+			outFound = true;
+		}
+		return true;
 	}
 
 	// statement 핸들 할당
@@ -205,7 +223,14 @@ bool DBConnection::CreatePlayer(const std::string& name, int64_t& outId)
 	outId = 0;
 	if (m_conn == SQL_NULL_HDBC)
 	{
-		return false;
+		std::lock_guard lock(g_memMutex);
+		if (g_memRows.contains(name))
+		{
+			return false;
+		}
+		outId = ++g_memNextId;
+		g_memRows[name] = PlayerRow{ outId, name, 1, 0, 100, 100, 0, 0 };
+		return true;
 	}
 
 	SQLHSTMT stmt = SQL_NULL_HSTMT;
@@ -271,6 +296,16 @@ bool DBConnection::SavePlayer(const PlayerRow& row)
 {
 	if (m_conn == SQL_NULL_HDBC)
 	{
+		std::lock_guard lock(g_memMutex);
+		for (auto& [name, mem] : g_memRows)
+		{
+			if (mem.id == row.id)
+			{
+				mem = row;
+				mem.name = name;
+				return true;
+			}
+		}
 		return false;
 	}
 
@@ -331,7 +366,7 @@ bool DBConnection::UpdateLastLogin(int64_t id)
 {
 	if (m_conn == SQL_NULL_HDBC)
 	{
-		return false;
+		return true;
 	}
 
 	SQLHSTMT stmt = SQL_NULL_HSTMT;

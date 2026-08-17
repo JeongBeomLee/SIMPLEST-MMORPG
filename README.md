@@ -119,8 +119,14 @@ SIMPLEST-MMORPG/
 ├── Scripts/
 │   └── monster_spawn.lua    # 200K 몬스터 격자 분포 자동 생성
 │
-└── Data/
-    └── map_obstacles.dat    # 맵 장애물 비트맵
+├── Data/
+│   └── map_obstacles.dat    # 맵 장애물 비트맵
+│
+├── Lua/
+│   ├── Include/             # Lua 5.4 헤더 + sol2 (헤더 온리 바인딩)
+│   └── Lib/                 # lua54.lib / lua54.dll (x64) — 빌드 시 자동 복사
+│
+└── x64/Release/             # 빌드 결과물 (exe + dll + Data + Scripts 자동 복사)
 ```
 
 ---
@@ -275,48 +281,51 @@ int64_t round_trip = NowMs() - pkt->move_time;
 
 ## 빌드 + 실행
 
-### 사전 준비
+### 사전 준비 (필수)
 
-1. **Visual Studio 2022** + C++ 데스크톱 워크로드
-2. **Microsoft SQL Server 2022 Developer Edition** + SSMS
-3. **ODBC Driver 18 for SQL Server**
+1. **Visual Studio 2022** + "C++를 사용한 데스크톱 개발" 워크로드 (MSVC v143, Windows 10 SDK)
+2. Git
 
-### DB 셋업
-
-SSMS에서 실행:
-
-```sql
-CREATE DATABASE mmorpg_dev;
-GO
-
-USE master;
-CREATE LOGIN mmorpg_user WITH PASSWORD = 'YourPassword!';
-GO
-
-USE mmorpg_dev;
-CREATE USER mmorpg_user FOR LOGIN mmorpg_user;
-ALTER ROLE db_owner ADD MEMBER mmorpg_user;
-GO
-
--- Players 테이블 + 4 SP (sp_LoadPlayerByName, sp_CreatePlayer, sp_SavePlayer, sp_UpdateLastLogin)
--- Server/schema.sql 참고
-```
-
-Mixed Mode 인증 활성화 + TCP/IP 포트 1433 활성화 + SQL Server 재시작.
+그 외 의존성(Lua 5.4 헤더/lib/dll, sol2 헤더)은 저장소에 포함되어 있어 별도 설치가 필요 없습니다.
+DB는 **선택**입니다 — 없으면 서버가 자동으로 in-memory 모드로 뜹니다(아래 참고).
 
 ### 빌드
 
 ```
-SIMPLEST-MMORPG.sln 열기 → Release | x64 → 솔루션 빌드
+git clone https://github.com/JeongBeomLee/SIMPLEST-MMORPG.git
+cd SIMPLEST-MMORPG/SIMPLEST-MMORPG
 ```
+
+- **Visual Studio**: `SIMPLEST-MMORPG.sln` 열기 → 구성 `Release | x64` → 솔루션 빌드 (Ctrl+Shift+B)
+- **명령줄** (Developer PowerShell / Developer Command Prompt):
+  ```
+  msbuild SIMPLEST-MMORPG.sln -p:Configuration=Release -p:Platform=x64 -m
+  ```
+
+빌드 결과물은 모두 `SIMPLEST-MMORPG/x64/Release/` 한 곳에 모입니다.
+빌드 후 단계에서 실행에 필요한 파일이 자동으로 같은 폴더로 복사됩니다:
+
+```
+x64/Release/
+├── Server.exe
+├── Client.exe
+├── StressTest.exe
+├── lua54.dll             ← Lua/Lib 에서 자동 복사
+├── Data/map_obstacles.dat ← 자동 복사 (서버·클라이언트 공용 맵)
+└── Scripts/monster_spawn.lua ← 자동 복사 (몬스터 스폰 스크립트)
+```
+
+> `Data/`, `Scripts/` 경로는 **실행 파일의 현재 작업 디렉터리 기준**입니다.
+> `x64/Release/` 에서 exe를 직접 실행하거나, VS에서 F5로 실행하면(작업 디렉터리가 `$(OutDir)`로 설정돼 있음) 그대로 동작합니다.
 
 ### 실행 순서
 
-1. **서버**: `Server/x64/Release/Server.exe`
-   - 환경변수 `MMORPG_DB_PASSWORD` 설정 (옵션, 기본값 코드에 박혀있음)
-2. **클라이언트**: `Client/x64/Release/Client.exe`
+1. **서버**: `x64\Release\Server.exe`
+   - 콘솔에 `Server started on port 9000` 이 뜨면 준비 완료
+   - `q` + Enter 로 종료
+2. **클라이언트**: `x64\Release\Client.exe` (여러 개 띄워도 됨)
    - 이름 입력 → Enter → 게임 진입
-3. **부하 측정** (선택): `StressTest/x64/Release/StressTest.exe`
+3. **부하 측정** (선택): `x64\Release\StressTest.exe`
    - 자동으로 `127.0.0.1:9000` 에 봇 생성
 
 조작:
@@ -325,6 +334,45 @@ SIMPLEST-MMORPG.sln 열기 → Release | x64 → 솔루션 빌드
 - Enter: 채팅 모드 진입 / 송신
 - Tab (채팅 모드): VIEW ↔ GLOBAL 채널 토글
 - ESC: 채팅 취소 또는 게임 종료
+
+### DB 없이 실행 (기본)
+
+서버는 시작 시 `localhost,1433` 의 SQL Server에 접속을 시도하고, 실패하면 아래 로그와 함께 **in-memory 모드**로 계속 실행됩니다.
+
+```
+[WARN] [DBManager] DB unavailable -> in-memory mode (progress is NOT persisted)
+```
+
+- 로그인 / 캐릭터 생성 / 중복 로그인 차단 / 자동 저장 등 모든 게임 로직이 동일하게 동작합니다.
+- 다만 플레이어 데이터는 서버 프로세스 메모리에만 있으므로 **서버를 재시작하면 초기화**됩니다.
+- ODBC Driver 18 이 설치돼 있지 않아도 됩니다 (연결 실패 → in-memory).
+
+### DB 연동 (선택)
+
+영속화까지 확인하려면:
+
+1. **Microsoft SQL Server 2022 Developer Edition** + SSMS, **ODBC Driver 18 for SQL Server** 설치
+2. Mixed Mode 인증 활성화 + TCP/IP 포트 1433 활성화 + SQL Server 재시작
+3. SSMS에서 실행:
+
+```sql
+CREATE DATABASE mmorpg_dev;
+GO
+
+USE master;
+CREATE LOGIN mmorpg_user WITH PASSWORD = 'Mmorpg!Dev123';
+GO
+
+USE mmorpg_dev;
+CREATE USER mmorpg_user FOR LOGIN mmorpg_user;
+ALTER ROLE db_owner ADD MEMBER mmorpg_user;
+GO
+```
+
+4. `Server/schema.sql` 실행 (Players 테이블 + 4 SP: `sp_LoadPlayerByName`, `sp_CreatePlayer`, `sp_SavePlayer`, `sp_UpdateLastLogin`)
+5. 비밀번호를 다르게 했다면 환경변수 `MMORPG_DB_PASSWORD` 로 지정 (미설정 시 기본값 `Mmorpg!Dev123`)
+
+서버 시작 로그에 `[DB] Connected to localhost,1433/mmorpg_dev` 가 두 번(login/save 워커) 찍히면 성공.
 
 ---
 
