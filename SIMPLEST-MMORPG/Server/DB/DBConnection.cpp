@@ -6,7 +6,6 @@
 #include <unordered_map>
 
 // DB 미연결 시 in-memory fallback (프로세스 수명 동안만 유지, 재시작 시 초기화)
-// ponytail: 로컬에 SQL Server 없어도 실행되게 하는 최소 구현. 영속화 필요하면 실제 DB 연결.
 namespace
 {
 	std::mutex g_memMutex;
